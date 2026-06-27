@@ -29,9 +29,14 @@ function isPublicPath(pathname: string): boolean {
 export async function middleware(request: NextRequest) {
   // Step 1 — refresh the session. `supabaseResponse` carries the refreshed
   // cookies; `user` is null when the visitor is not authenticated.
-  const { supabaseResponse, user } = await updateSession(request);
+  const { supabaseResponse, user, configured } = await updateSession(request);
 
   const { pathname } = request.nextUrl;
+
+  // Auth not configured (Supabase env missing) → fail open: let every request
+  // through untouched so the site stays up instead of 500ing or redirect-looping
+  // to a login that can't work. Route protection resumes once env vars are set.
+  if (!configured) return supabaseResponse;
 
   // Step 2a — signed-in users have no business on /login; send them home.
   if (user && pathname === "/login") {
