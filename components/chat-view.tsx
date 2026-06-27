@@ -3,8 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, type UIMessage } from "ai";
-import type { Character } from "@/lib/characters";
-import { SCRIPT } from "@/lib/characters";
+import type { Character, WorkScript } from "@/lib/characters";
 import { ArrowRight, Restart, Stop } from "./icons";
 
 type EmailState = "idle" | "sending" | "sent" | "auth" | "error";
@@ -14,12 +13,12 @@ function textOf(m: UIMessage): string {
 }
 
 export function ChatView({
-  scriptId,
+  script,
   character,
   fileFraction,
   onOpenDossier,
 }: {
-  scriptId: string;
+  script: WorkScript;
   character: Character;
   fileFraction: string;
   onOpenDossier: () => void;
@@ -31,9 +30,9 @@ export function ChatView({
   const { messages, sendMessage, status, stop, setMessages } = useChat({
     transport: new DefaultChatTransport({
       api: "/api/chat",
-      // Per the /api/chat contract: client sends scriptId + characterId; the
-      // server resolves the real character + script text and owns persistence.
-      body: { scriptId, characterId: character.id },
+      // No auth, no DB: the client sends the full grounding (character + the
+      // pasted script) inline; the server just builds the system prompt.
+      body: { character, script },
     }),
   });
 
@@ -68,7 +67,7 @@ export function ChatView({
         body: JSON.stringify({
           characterName: character.name,
           characterRef: character.id,
-          scriptTitle: SCRIPT.title,
+          scriptTitle: script.title,
           transcript,
         }),
       });

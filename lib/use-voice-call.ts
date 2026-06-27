@@ -26,6 +26,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import * as Sentry from "@sentry/nextjs";
+import type { Character, WorkScript } from "@/lib/characters";
 
 // The voice loop catches its own failures to keep the UX graceful, which means
 // they never bubble to Sentry's global handler. Report them here so a broken
@@ -65,8 +66,10 @@ export type UseVoiceCall = {
 };
 
 export type UseVoiceCallOptions = {
-  /** Character to talk to — must match an id in lib/characters.ts. */
-  characterId: string;
+  /** The character to talk to — grounding is sent inline (no auth/DB). */
+  character: Character;
+  /** The pasted script the character lives in. */
+  script: WorkScript;
   /** Optional TTS voice override passed to /api/speech (defaults server-side). */
   voice?: string;
 };
@@ -76,7 +79,8 @@ export type UseVoiceCallOptions = {
 // ---------------------------------------------------------------------------
 
 export function useVoiceCall({
-  characterId,
+  character,
+  script,
   voice,
 }: UseVoiceCallOptions): UseVoiceCall {
   const [status, setStatus] = useState<VoiceStatus>("idle");
@@ -148,7 +152,8 @@ export function useVoiceCall({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          characterId,
+          character,
+          script,
           messages: transcriptRef.current.map((t) => ({
             role: t.role,
             content: t.text,
@@ -214,7 +219,7 @@ export function useVoiceCall({
       setStatus("idle");
       reportVoiceError("speech", err);
     }
-  }, [characterId, voice, pushTurn, stopPlayback]);
+  }, [character, script, voice, pushTurn, stopPlayback]);
 
   // -------------------------------------------------------------------------
   // Step 2: stop recording, transcribe, then hand off to respondAndSpeak.

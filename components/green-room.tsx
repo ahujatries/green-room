@@ -1,18 +1,82 @@
 "use client";
 
-import { useState, useTransition } from "react";
+// The client root of The Green Room (no auth, no DB).
+//
+// It owns the one piece of app state: the current "room" — a pasted script plus
+// its derived cast — persisted to localStorage so a refresh keeps you inside.
+// No room yet → the add-script screen. A room → the shell (home / chat / call /
+// video), with a "new script" affordance to swap the page out.
 
-import type { Character } from "@/lib/characters";
-import { fileFraction, getCharacter } from "@/lib/characters";
+import { useEffect, useState } from "react";
+
+import type { Character, Room, WorkScript } from "@/lib/characters";
+import { fileFraction } from "@/lib/characters";
 import type { ScriptListItem } from "@/lib/data/scripts";
-import { getCharacters } from "@/app/actions/data";
+import { AddScript } from "@/components/add-script";
 import { HomeView, type Mode } from "@/components/home-view";
 import { ChatView } from "@/components/chat-view";
 import { CallView } from "@/components/call-view";
 import { VideoView } from "@/components/video-view";
 import { DossierSheet } from "@/components/dossier-sheet";
-import { UserMenu } from "@/components/user-menu";
 import { Back } from "@/components/icons";
+
+const STORAGE_KEY = "gr:room:v1";
+
+export function GreenRoom() {
+  const [room, setRoom] = useState<Room | null>(null);
+  const [ready, setReady] = useState(false);
+
+  // Load any saved room once, on the client, to avoid a hydration mismatch.
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        const parsed = JSON.parse(raw) as Room;
+        if (parsed?.script?.text && Array.isArray(parsed.cast) && parsed.cast.length) {
+          setRoom(parsed);
+        }
+      }
+    } catch {
+      /* ignore corrupt storage */
+    }
+    setReady(true);
+  }, []);
+
+  function open(next: Room) {
+    setRoom(next);
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+    } catch {
+      /* storage full / disabled — room still works for this session */
+    }
+  }
+
+  function clear() {
+    setRoom(null);
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+    } catch {
+      /* ignore */
+    }
+  }
+
+  // Avoid a flash of the wrong screen before localStorage is read.
+  if (!ready) {
+    return <main className="min-h-dvh w-full bg-void" />;
+  }
+
+  if (!room) {
+    return <AddScript onReady={open} />;
+  }
+
+  return <RoomShell room={room} onNewScript={clear} />;
+}
+
+// One page count estimate so the home meta line reads like the demo's "12 pp".
+function estimatePages(text: string): number {
+  const lines = text.split(/\r?\n/).length;
+  return Math.max(1, Math.round(lines / 55));
+}
 
 type View = "home" | "chat" | "call" | "video";
 
@@ -22,39 +86,34 @@ const MODE_LABEL: Record<Exclude<View, "home">, string> = {
   video: "Video Call",
 };
 
-/** Find a character within a list by id (the live cast, not the demo). */
-function findCharacter(cast: Character[], id: string | null): Character | undefined {
-  if (!id) return undefined;
-  return cast.find((c) => c.id === id) ?? getCharacter(id);
-}
-
-export function AppShell({
-  user,
-  scripts,
-  initialScriptId,
-  initialCharacters,
+function RoomShell({
+  room,
+  onNewScript,
 }: {
-  user: { id: string; email: string | null };
-  scripts: ScriptListItem[];
-  initialScriptId: string;
-  initialCharacters: Character[];
+  room: Room;
+  onNewScript: () => void;
 }) {
-  // Which of the writer's scripts we're inside, and that script's mapped cast.
-  const [scriptId, setScriptId] = useState<string>(initialScriptId);
-  const [cast, setCast] = useState<Character[]>(initialCharacters);
+  const { script, cast } = room;
 
-  // View state (carried over verbatim from the old client page).
   const [view, setView] = useState<View>("home");
-  const [charId, setCharId] = useState<string | null>(
-    initialCharacters[0]?.id ?? null,
-  );
+  const [charId, setCharId] = useState<string | null>(cast[0]?.id ?? null);
   const [dossier, setDossier] = useState(false);
-  const [switching, startSwitch] = useTransition();
 
-  const script = scripts.find((s) => s.id === scriptId) ?? scripts[0];
-  const character = findCharacter(cast, charId);
+  const character = cast.find((c) => c.id === charId);
   const isHome = view === "home";
   const fraction = character ? fileFraction(character) : "0/0";
+
+  // HomeView is built for the Arqo-script list shape; give it a one-item list
+  // synthesized from the pasted script so the cast cards render unchanged.
+  const listItem: ScriptListItem = {
+    id: "work",
+    title: script.title,
+    logline: script.logline || null,
+    synopsis: null,
+    format: script.format || null,
+    pageCount: estimatePages(script.text),
+    updatedAt: null,
+  };
 
   function enter(id: string, mode: Mode) {
     setCharId(id);
@@ -64,20 +123,6 @@ export function AppShell({
   function goHome() {
     setView("home");
     setDossier(false);
-  }
-
-  // Switch into a different script: load its cast via the server action, then
-  // reset to that script's home with its first character selected.
-  function selectScript(id: string) {
-    if (id === scriptId || switching) return;
-    startSwitch(async () => {
-      const next = await getCharacters(id);
-      setScriptId(id);
-      setCast(next);
-      setCharId(next[0]?.id ?? null);
-      setView("home");
-      setDossier(false);
-    });
   }
 
   return (
@@ -112,7 +157,12 @@ export function AppShell({
                 the green room
               </span>
               <div className="flex-1" />
-              <UserMenu email={user.email} />
+              <button
+                onClick={onNewScript}
+                className="rounded-full border border-bonelit/20 bg-bonelit/5 px-[12px] py-1.5 font-mono text-[8.5px] font-bold uppercase tracking-[0.12em] text-fog transition-colors hover:border-spring hover:text-bonelit"
+              >
+                new script
+              </button>
             </header>
           ) : (
             <header className="flex flex-none items-center gap-[11px] border-b border-bonelit/10 px-3.5 py-[11px]">
@@ -125,7 +175,7 @@ export function AppShell({
               </button>
               <div className="min-w-0">
                 <div className="truncate font-mono text-[8.5px] font-medium uppercase tracking-[0.13em] text-mist">
-                  {script?.title ?? "Untitled"}
+                  {script.title || "Untitled"}
                 </div>
                 <div className="mt-1.5 flex items-center gap-1.5">
                   <span className="font-script text-[12.5px] font-bold text-bonelit">
@@ -152,18 +202,18 @@ export function AppShell({
           <div className="relative min-h-0 flex-1">
             {view === "home" && (
               <HomeView
-                script={script}
-                scripts={scripts}
-                onSelectScript={selectScript}
-                switching={switching}
+                script={listItem}
+                scripts={[listItem]}
+                onSelectScript={() => {}}
+                switching={false}
                 characters={cast}
                 onEnter={enter}
               />
             )}
             {view === "chat" && character && (
               <ChatView
-                key={`${scriptId}:${character.id}`}
-                scriptId={scriptId}
+                key={character.id}
+                script={script}
                 character={character}
                 fileFraction={fraction}
                 onOpenDossier={() => setDossier(true)}
@@ -171,15 +221,17 @@ export function AppShell({
             )}
             {view === "call" && character && (
               <CallView
-                key={`${scriptId}:${character.id}`}
+                key={character.id}
                 character={character}
+                script={script}
                 onExit={goHome}
               />
             )}
             {view === "video" && character && (
               <VideoView
-                key={`${scriptId}:${character.id}`}
+                key={character.id}
                 character={character}
+                script={script}
                 onExit={goHome}
               />
             )}
@@ -198,4 +250,7 @@ export function AppShell({
   );
 }
 
-export default AppShell;
+export default GreenRoom;
+
+// Re-export for callers that want the room type at the component boundary.
+export type { Character, WorkScript };

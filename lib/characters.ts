@@ -222,3 +222,38 @@ export function fileFraction(character: Character): string {
   const written = character.facets.filter((f) => f.value).length;
   return `${written}/${character.facets.length}`;
 }
+
+// ---------------------------------------------------------------------------
+// Bring-your-own-script model (no auth, no DB).
+//
+// A "room" is one screenplay the writer pasted in, plus the cast we derived
+// from it. It lives entirely in the browser (localStorage) and is passed inline
+// to the chat / voice / casting routes — there is no login and nothing is read
+// from Supabase. The grounding contract is exactly the four fields
+// buildSystemPrompt consumes.
+// ---------------------------------------------------------------------------
+
+/** The minimal readable screenplay a character is grounded in. */
+export type WorkScript = {
+  title: string;
+  format: string;
+  logline: string;
+  text: string;
+};
+
+/** A pasted script plus its derived cast — the whole client-side app state. */
+export type Room = {
+  script: WorkScript;
+  cast: Character[];
+};
+
+/** The one-tap sample so the room is usable before you paste anything. */
+export const SAMPLE_ROOM: Room = {
+  script: {
+    title: SCRIPT.title,
+    format: SCRIPT.format,
+    logline: SCRIPT.logline,
+    text: SCRIPT.text,
+  },
+  cast: CHARACTERS,
+};

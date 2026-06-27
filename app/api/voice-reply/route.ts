@@ -6,17 +6,16 @@
 // canon discipline ("never invent what the page hasn't decided") is identical
 // across typed and spoken modes.
 //
-// Request:  { characterId: string,
+// Request:  { character: Character, script: WorkScript,
 //             messages: { role: "user" | "assistant"; content: string }[] }
 // Response: { text: string }   (200)
 //           { error: string }  (4xx/5xx)
 //
-// Model + routing: plain string model id → routed through the Vercel AI Gateway
-// automatically (AI_GATEWAY_API_KEY locally, OIDC in prod), same as /api/chat.
-// Uses generateText from `ai@5` — no new SDK deps, so the chat route stays put.
+// Character + script are sent inline by the client (no auth, no DB) — same room
+// the browser holds for /api/chat.
 
 import { generateText, type ModelMessage } from "ai";
-import { getCharacter, SCRIPT } from "@/lib/characters";
+import type { Character, WorkScript } from "@/lib/characters";
 import { buildSystemPrompt } from "@/lib/prompt";
 
 export const maxDuration = 30;
@@ -33,23 +32,28 @@ Your reply will be turned into audio and played back. Therefore:
 - Sound like natural speech: contractions, plain punctuation. Never describe your tone — just use it.`;
 
 export async function POST(req: Request) {
-  let characterId: string;
+  let character: Character | undefined;
+  let script: WorkScript | undefined;
   let messages: ChatTurn[];
 
   try {
     const body = (await req.json()) as {
-      characterId?: string;
+      character?: Character;
+      script?: WorkScript;
       messages?: ChatTurn[];
     };
-    characterId = body.characterId ?? "";
+    character = body.character;
+    script = body.script;
     messages = Array.isArray(body.messages) ? body.messages : [];
   } catch {
     return Response.json({ error: "Invalid JSON body." }, { status: 400 });
   }
 
-  const character = getCharacter(characterId);
-  if (!character) {
-    return Response.json({ error: "Unknown character." }, { status: 400 });
+  if (!character?.name || !script?.text) {
+    return Response.json(
+      { error: "Missing character or script." },
+      { status: 400 },
+    );
   }
   if (messages.length === 0) {
     return Response.json(
@@ -71,7 +75,7 @@ export async function POST(req: Request) {
     );
   }
 
-  const system = `${buildSystemPrompt(character, SCRIPT)}\n\n${SPOKEN_STYLE}`;
+  const system = `${buildSystemPrompt(character, script)}\n\n${SPOKEN_STYLE}`;
 
   try {
     const { text } = await generateText({

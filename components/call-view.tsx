@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { Character } from "@/lib/characters";
+import type { Character, WorkScript } from "@/lib/characters";
 import { useVoiceCall } from "@/lib/use-voice-call";
 import { CallTranscript } from "./call-transcript";
 import { Hang, Mic, MicOff, Script } from "./icons";
@@ -21,12 +21,14 @@ const BARS = [9, 16, 24, 13, 20, 28, 11, 18, 24, 9, 15, 22, 10];
 
 export function CallView({
   character,
+  script,
   onExit,
 }: {
   character: Character;
+  script: WorkScript;
   onExit: () => void;
 }) {
-  const call = useVoiceCall({ characterId: character.id });
+  const call = useVoiceCall({ character, script });
   const [showScript, setShowScript] = useState(false);
   const timer = useTimer();
   const live = call.status === "speaking" || call.status === "listening";

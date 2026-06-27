@@ -1,7 +1,8 @@
-import type { Character } from "./characters";
-import type { SCRIPT } from "./characters";
+import type { Character, WorkScript } from "./characters";
 
-type Script = typeof SCRIPT;
+// The prompt only ever reads title / format / logline / text — so it grounds
+// equally on the demo SCRIPT or any pasted WorkScript.
+type Script = WorkScript;
 
 // The system prompt is the whole product. It does three things:
 //   1. Puts the model fully in-character, grounded ONLY in the page.

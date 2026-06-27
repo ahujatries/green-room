@@ -4,15 +4,14 @@
 // {name}?"). This fills it: a cinematic portrait generated from the character's
 // spoiler-free `look`, via an image model routed through the Vercel AI Gateway
 // (same gateway path as /api/chat + /api/voice-reply — OIDC in prod, the pulled
-// token locally). It's the 5th Gateway modality in the app: text, STT, TTS,
-// reply, and now image.
+// token locally).
 //
-// Request:  { characterId: string }
+// Request:  { character: Character }   (sent inline by the client; no auth/DB)
 // Response: { image: string }  — a data: URL (image/*) ready for <img src>/bg
 //           { error: string }  — 4xx/5xx
 
 import { generateText } from "ai";
-import { getCharacter } from "@/lib/characters";
+import type { Character } from "@/lib/characters";
 
 // Image generation is slower than text; give it headroom.
 export const maxDuration = 60;
@@ -20,21 +19,20 @@ export const maxDuration = 60;
 const IMAGE_MODEL = process.env.IMAGE_MODEL ?? "google/gemini-3-pro-image";
 
 export async function POST(req: Request) {
-  let characterId: string;
+  let character: Character | undefined;
   try {
-    const body = (await req.json()) as { characterId?: string };
-    characterId = body.characterId ?? "";
+    const body = (await req.json()) as { character?: Character };
+    character = body.character;
   } catch {
     return Response.json({ error: "Invalid JSON body." }, { status: 400 });
   }
 
-  const character = getCharacter(characterId);
-  if (!character) {
-    return Response.json({ error: "Unknown character." }, { status: 400 });
+  if (!character?.name) {
+    return Response.json({ error: "Missing character." }, { status: 400 });
   }
 
-  // Demo characters carry a tuned `look`; anything else falls back to a prompt
-  // derived from role + blurb so the route still works for sourced characters.
+  // A tuned `look` is best; anything else falls back to a prompt derived from
+  // role + blurb so the route still works for any pasted-script character.
   const look = character.look ?? `${character.role}. ${character.blurb}`;
   const prompt =
     `Cinematic casting portrait for a film character. ${look} ` +

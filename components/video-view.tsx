@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import type { Character } from "@/lib/characters";
+import type { Character, WorkScript } from "@/lib/characters";
 import { useVoiceCall } from "@/lib/use-voice-call";
 import { CallTranscript } from "./call-transcript";
 import { Hang, Mic, MicOff, Script } from "./icons";
@@ -19,12 +19,14 @@ function useTimer() {
 
 export function VideoView({
   character,
+  script,
   onExit,
 }: {
   character: Character;
+  script: WorkScript;
   onExit: () => void;
 }) {
-  const call = useVoiceCall({ characterId: character.id });
+  const call = useVoiceCall({ character, script });
   const [showScript, setShowScript] = useState(false);
   const [castImg, setCastImg] = useState<string | null>(null);
   const [castState, setCastState] = useState<
@@ -32,8 +34,8 @@ export function VideoView({
   >("idle");
   const timer = useTimer();
 
-  // Generate an AI casting photo for this character via /api/casting (the 5th
-  // Gateway modality). The route is auth-gated, so handle a redirect gracefully.
+  // Generate an AI casting photo for this character via /api/casting (an image
+  // model through the Vercel AI Gateway). Character is sent inline — no auth.
   async function generateCasting() {
     if (castState === "loading") return;
     setCastState("loading");
@@ -41,13 +43,8 @@ export function VideoView({
       const res = await fetch("/api/casting", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ characterId: character.id }),
-        redirect: "manual",
+        body: JSON.stringify({ character }),
       });
-      if (res.type === "opaqueredirect" || res.status === 401) {
-        setCastState("auth");
-        return;
-      }
       const data = (await res.json()) as { image?: string; error?: string };
       if (!res.ok || !data.image) throw new Error(data.error || "failed");
       setCastImg(data.image);
