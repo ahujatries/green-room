@@ -4,7 +4,10 @@ import { useEffect, useRef, useState } from "react";
 import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, type UIMessage } from "ai";
 import type { Character } from "@/lib/characters";
+import { SCRIPT } from "@/lib/characters";
 import { ArrowRight, Restart, Stop } from "./icons";
+
+type EmailState = "idle" | "sending" | "sent" | "auth" | "error";
 
 function textOf(m: UIMessage): string {
   return m.parts.map((p) => (p.type === "text" ? p.text : "")).join("");
@@ -22,6 +25,7 @@ export function ChatView({
   onOpenDossier: () => void;
 }) {
   const [input, setInput] = useState("");
+  const [emailState, setEmailState] = useState<EmailState>("idle");
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const { messages, sendMessage, status, stop, setMessages } = useChat({
@@ -50,6 +54,46 @@ export function ChatView({
     setInput("");
   }
 
+  async function emailInterview() {
+    if (emailState === "sending" || empty) return;
+    setEmailState("sending");
+    const transcript = messages
+      .filter((m) => m.role === "user" || m.role === "assistant")
+      .map((m) => ({ role: m.role as "user" | "assistant", text: textOf(m) }))
+      .filter((t) => t.text.trim().length > 0);
+    try {
+      const res = await fetch("/api/email-interview", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          characterName: character.name,
+          characterRef: character.id,
+          scriptTitle: SCRIPT.title,
+          transcript,
+        }),
+      });
+      if (res.status === 401) {
+        setEmailState("auth");
+      } else if (!res.ok) {
+        setEmailState("error");
+      } else {
+        setEmailState("sent");
+      }
+    } catch {
+      setEmailState("error");
+    }
+    // Let the result linger, then reset the label.
+    setTimeout(() => setEmailState("idle"), 3200);
+  }
+
+  const emailLabel: Record<EmailState, string> = {
+    idle: "email me this",
+    sending: "sending…",
+    sent: "sent ✓",
+    auth: "sign in first",
+    error: "try again",
+  };
+
   return (
     <div className="absolute inset-0 flex flex-col">
       {/* Live bar */}
@@ -59,6 +103,21 @@ export function ChatView({
           chat · live
         </span>
         <div className="flex-1" />
+        {!empty && (
+          <button
+            onClick={emailInterview}
+            disabled={emailState === "sending"}
+            className={`rounded-full border px-[11px] py-1.5 font-mono text-[8.5px] font-bold uppercase tracking-[0.12em] transition-colors disabled:opacity-60 ${
+              emailState === "sent"
+                ? "border-spring/60 bg-spring/10 text-springpale"
+                : emailState === "error" || emailState === "auth"
+                  ? "border-flame/60 text-flame"
+                  : "border-bonelit/20 bg-bonelit/5 text-fog hover:border-spring"
+            }`}
+          >
+            {emailLabel[emailState]}
+          </button>
+        )}
         <button
           onClick={onOpenDossier}
           className="rounded-full border border-bonelit/20 bg-bonelit/5 px-[11px] py-1.5 font-mono text-[8.5px] font-bold uppercase tracking-[0.12em] text-fog transition-colors hover:border-spring"

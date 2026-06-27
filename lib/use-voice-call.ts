@@ -25,6 +25,16 @@
 // browser APIs used are MediaRecorder, getUserMedia, and HTMLAudioElement.
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import * as Sentry from "@sentry/nextjs";
+
+// The voice loop catches its own failures to keep the UX graceful, which means
+// they never bubble to Sentry's global handler. Report them here so a broken
+// STT/TTS/Gateway hop is visible, tagged by which stage of the loop failed.
+function reportVoiceError(stage: string, err: unknown) {
+  Sentry.captureException(err, { tags: { surface: "voice", voice_stage: stage } });
+  // eslint-disable-next-line no-console
+  console.error(`[useVoiceCall] ${stage} error:`, err);
+}
 
 // ---------------------------------------------------------------------------
 // Public contract (this is what the UI imports / destructures).
@@ -156,8 +166,7 @@ export function useVoiceCall({
         "Something went wrong reaching the character. Try again in a moment.",
       );
       setStatus("idle");
-      // eslint-disable-next-line no-console
-      console.error("[useVoiceCall] reply error:", err);
+      reportVoiceError("reply", err);
       return;
     }
 
@@ -203,8 +212,7 @@ export function useVoiceCall({
       if (!mountedRef.current) return;
       // The text reply is already on screen; degrade to idle silently-ish.
       setStatus("idle");
-      // eslint-disable-next-line no-console
-      console.error("[useVoiceCall] speech error:", err);
+      reportVoiceError("speech", err);
     }
   }, [characterId, voice, pushTurn, stopPlayback]);
 
@@ -240,8 +248,7 @@ export function useVoiceCall({
         if (!mountedRef.current) return;
         setCaption("I couldn't catch that. Want to try again?");
         setStatus("idle");
-        // eslint-disable-next-line no-console
-        console.error("[useVoiceCall] transcribe error:", err);
+        reportVoiceError("transcribe", err);
         return;
       }
 
@@ -313,8 +320,7 @@ export function useVoiceCall({
       setStatus("idle");
       setMicOn(false);
       stopStream();
-      // eslint-disable-next-line no-console
-      console.error("[useVoiceCall] mic error:", err);
+      reportVoiceError("mic", err);
     }
   }, [stopPlayback, stopStream, transcribeAndRespond]);
 
