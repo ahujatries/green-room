@@ -1,0 +1,83 @@
+@import "tailwindcss";
+
+@theme {
+  /* Arqo palette — Bone / Paper / Ink / Spring / Canopy / Sage / Flame */
+  --color-bone: #f3eee3;
+  --color-paper: #fbf9f4;
+  --color-ink: #16150f;
+  --color-ink-soft: #4a463b;
+  --color-ink-faint: #8b8576;
+  --color-spring: #a5e857;
+  --color-canopy: #3f7a1c;
+  --color-sage: #8a9a7b;
+  --color-flame: #e8633a;
+  --color-line: #e4ddcc;
+
+  --font-sans: var(--font-geist-sans), system-ui, sans-serif;
+  --font-mono: var(--font-courier), ui-monospace, monospace;
+}
+
+html,
+body {
+  background-color: var(--color-bone);
+  color: var(--color-ink);
+}
+
+/* A faint paper grain so the bone surface doesn't read as flat. */
+body {
+  background-image: radial-gradient(
+    var(--color-line) 0.5px,
+    transparent 0.5px
+  );
+  background-size: 22px 22px;
+}
+
+::selection {
+  background: var(--color-spring);
+  color: var(--color-ink);
+}
+
+/* Slim, on-brand scrollbar for the transcript. */
+.scroll-thin::-webkit-scrollbar {
+  width: 8px;
+}
+.scroll-thin::-webkit-scrollbar-thumb {
+  background: var(--color-line);
+  border-radius: 999px;
+}
+.scroll-thin::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+@keyframes blink {
+  0%,
+  100% {
+    opacity: 0.2;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+.dot {
+  animation: blink 1.4s infinite both;
+}
+.dot:nth-child(2) {
+  animation-delay: 0.2s;
+}
+.dot:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.rise {
+  animation: rise 0.32s ease-out both;
+}
