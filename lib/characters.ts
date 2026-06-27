@@ -111,6 +111,10 @@ export type Character = {
   role: string;
   /** Short role line, e.g. "waitress, 34" (cast cards, uppercased in UI). */
   roleShort: string;
+  /** Spoiler-free physical description used to generate an AI casting photo.
+   *  Optional — real Arqo-sourced characters may omit it; the casting route
+   *  falls back to a prompt derived from role + blurb. */
+  look?: string;
   blurb: string;
   // Distilled from the page — the totality of what is SETTLED about them.
   established: string;
@@ -133,6 +137,7 @@ export const CHARACTERS: Character[] = [
     initial: "N",
     role: "The waitress · 34",
     roleShort: "waitress, 34",
+    look: "A 34-year-old woman closing a roadside diner deep in the night — faded waitress apron over a worn tee, hair tied back, tired and guarded eyes, a paperback in her apron pocket. Dim neon and rain-streaked windows behind her. Naturalistic film still, cinematic lighting, muted warm tones, shallow depth of field.",
     blurb:
       "Closing the Mirador alone. Sharp, guarded, answers questions with questions.",
     voiceNote:
@@ -172,6 +177,7 @@ export const CHARACTERS: Character[] = [
     initial: "A",
     role: "The last customer · 61",
     roleShort: "last customer, 61",
+    look: "A 61-year-old man at a diner counter near 3am — buttoned wool overcoat, weathered lined face, gray hair, watchful patient eyes, an untouched cup of black coffee in front of him. Rain-streaked window glow behind him. Naturalistic film still, cinematic lighting, muted warm tones, shallow depth of field.",
     blurb:
       "Nurses a coffee he won't drink. Knows more than he'll say. Carries a sealed envelope.",
     voiceNote:
