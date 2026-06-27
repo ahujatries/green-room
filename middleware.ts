@@ -17,10 +17,14 @@ import { updateSession } from "@/lib/supabase/middleware";
  */
 
 // Paths reachable without a session. Everything else requires auth.
+// The home (`/`) and the AI routes are public so the logged-out demo
+// ("The Last Shift") works; the page itself decides demo-vs-real by user.
 function isPublicPath(pathname: string): boolean {
   return (
+    pathname === "/" ||
     pathname === "/login" ||
     pathname.startsWith("/auth/") || // OAuth + magic-link callback, etc.
+    pathname.startsWith("/api/") || // chat / voice-reply / speech / transcribe / casting
     pathname.startsWith("/_next") || // Next.js internals
     pathname === "/favicon.ico"
   );
