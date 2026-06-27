@@ -1,41 +1,53 @@
-"use client";
+// The Green Room home — a SERVER component now. It resolves the signed-in
+// writer, lists their OWN Arqo scripts (RLS-scoped), and loads the first
+// script's cast for a fast first paint. Then it hands everything to the client
+// <AppShell/>, which owns view-switching, the script picker, and on-demand
+// loads of other scripts' casts via server actions.
+//
+// No fake data, ever: a writer with zero scripts gets a tasteful empty state
+// that points them back to Arqo, not a hard-coded demo screenplay.
 
-import { useState } from "react";
-import { CHARACTERS, SCRIPT, fileFraction, getCharacter } from "@/lib/characters";
-import { HomeView, type Mode } from "@/components/home-view";
-import { ChatView } from "@/components/chat-view";
-import { CallView } from "@/components/call-view";
-import { VideoView } from "@/components/video-view";
-import { DossierSheet } from "@/components/dossier-sheet";
-import { Back } from "@/components/icons";
+import { redirect } from "next/navigation";
 
-type View = "home" | "chat" | "call" | "video";
+import { createClient } from "@/lib/supabase/server";
+import { listScripts } from "@/lib/data/scripts";
+import { loadCharacters } from "@/lib/data/characters";
+import { AppShell } from "@/components/app-shell";
+import { UserMenu } from "@/components/user-menu";
 
-const MODE_LABEL: Record<Exclude<View, "home">, string> = {
-  chat: "Chat",
-  call: "Call",
-  video: "Video Call",
-};
+export default async function Page() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
 
-export default function Page() {
-  const [view, setView] = useState<View>("home");
-  const [charId, setCharId] = useState<string>(CHARACTERS[0].id);
-  const [dossier, setDossier] = useState(false);
+  // middleware.ts already gates this route, but resolve defensively so the rest
+  // of the page can assume a real user.
+  if (!user) redirect("/login");
 
-  const character = getCharacter(charId)!;
-  const isHome = view === "home";
-  const fraction = fileFraction(character);
+  const scripts = await listScripts();
 
-  function enter(id: string, mode: Mode) {
-    setCharId(id);
-    setView(mode);
-    setDossier(false);
-  }
-  function goHome() {
-    setView("home");
-    setDossier(false);
+  if (scripts.length === 0) {
+    return <EmptyState email={user.email ?? null} />;
   }
 
+  // First script's cast, server-rendered for an instant home. Every other
+  // script loads its cast lazily from the picker (app/actions/data.ts).
+  const initialScriptId = scripts[0].id;
+  const initialCharacters = await loadCharacters(initialScriptId);
+
+  return (
+    <AppShell
+      user={{ id: user.id, email: user.email ?? null }}
+      scripts={scripts}
+      initialScriptId={initialScriptId}
+      initialCharacters={initialCharacters}
+    />
+  );
+}
+
+// In-aesthetic empty state for a writer who has no scripts in Arqo yet.
+function EmptyState({ email }: { email: string | null }) {
   return (
     <main className="min-h-dvh w-full bg-void">
       <div className="shell-bg grain relative mx-auto flex h-dvh w-full max-w-[440px] flex-col overflow-hidden font-sans text-bonelit sm:my-4 sm:h-[860px] sm:max-h-[calc(100dvh-2rem)] sm:rounded-[28px] sm:border sm:border-bonelit/10 sm:shadow-[0_40px_120px_-30px_rgba(0,0,0,0.9)]">
@@ -56,87 +68,50 @@ export default function Page() {
           </div>
 
           {/* header */}
-          {isHome ? (
-            <header className="flex flex-none items-center gap-[9px] border-b border-bonelit/10 px-[18px] pb-[11px] pt-[13px]">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="/arqo-spiral.svg"
-                alt="Arqo"
-                className="h-[22px] w-[22px] flex-none"
-              />
-              <span className="font-sans text-[18px] font-black tracking-tight text-bonelit">
-                the green room
-              </span>
-              <div className="flex-1" />
-              <span className="text-right font-mono text-[8px] font-medium uppercase leading-[1.4] tracking-[0.13em] text-mist">
-                an arqo
-                <br />
-                experiment
-              </span>
-            </header>
-          ) : (
-            <header className="flex flex-none items-center gap-[11px] border-b border-bonelit/10 px-3.5 py-[11px]">
-              <button
-                onClick={goHome}
-                aria-label="Back"
-                className="flex h-[34px] w-[34px] flex-none items-center justify-center rounded-full border border-bonelit/20 bg-bonelit/5 text-fog transition-colors hover:border-spring"
-              >
-                <Back size={15} stroke={2.2} />
-              </button>
-              <div className="min-w-0">
-                <div className="font-mono text-[8.5px] font-medium uppercase tracking-[0.13em] text-mist">
-                  {SCRIPT.title}
-                </div>
-                <div className="mt-1.5 flex items-center gap-1.5">
-                  <span className="font-script text-[12.5px] font-bold text-bonelit">
-                    {character.name}
-                  </span>
-                  <span className="font-mono text-[8px] font-bold uppercase tracking-[0.12em] text-springpale">
-                    · {MODE_LABEL[view]}
-                  </span>
-                </div>
-              </div>
-              <div className="flex-1" />
-              <button
-                onClick={goHome}
-                aria-label="Home"
-                className="flex h-[34px] w-[34px] flex-none items-center justify-center opacity-70 transition-opacity hover:opacity-100"
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/arqo-spiral.svg" alt="home" className="h-5 w-5" />
-              </button>
-            </header>
-          )}
+          <header className="flex flex-none items-center gap-[9px] border-b border-bonelit/10 px-[18px] pb-[11px] pt-[13px]">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/arqo-spiral.svg"
+              alt="Arqo"
+              className="h-[22px] w-[22px] flex-none"
+            />
+            <span className="font-sans text-[18px] font-black tracking-tight text-bonelit">
+              the green room
+            </span>
+            <div className="flex-1" />
+            <UserMenu email={email} />
+          </header>
 
-          {/* content */}
-          <div className="relative min-h-0 flex-1">
-            {view === "home" && (
-              <HomeView characters={CHARACTERS} onEnter={enter} />
-            )}
-            {view === "chat" && (
-              <ChatView
-                key={charId}
-                character={character}
-                fileFraction={fraction}
-                onOpenDossier={() => setDossier(true)}
-              />
-            )}
-            {view === "call" && (
-              <CallView key={charId} character={character} onExit={goHome} />
-            )}
-            {view === "video" && (
-              <VideoView key={charId} character={character} onExit={goHome} />
-            )}
+          {/* body */}
+          <div className="flex min-h-0 flex-1 flex-col items-center justify-center px-7 text-center">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src="/arqo-spiral.svg"
+              alt=""
+              className="mb-6 h-14 w-14 opacity-30"
+            />
+            <p className="font-mono text-[9px] font-bold uppercase tracking-[0.2em] text-springpale">
+              The room is empty
+            </p>
+            <h1 className="mt-3 font-script text-[28px] font-bold leading-[1.1] text-bonelit">
+              No one to meet yet.
+            </h1>
+            <p className="mt-4 text-[14px] leading-[1.65] text-fog">
+              The Green Room reads the characters straight from your Arqo
+              scripts — and you don&rsquo;t have any yet. Start a script in Arqo,
+              write a few people into it, and they&rsquo;ll be waiting here.
+            </p>
+            <a
+              href="https://tryarqo.com"
+              className="mt-7 rounded-full border border-canopy bg-canopy px-5 py-2.5 font-mono text-[9px] font-bold uppercase tracking-[0.14em] text-[#f3eee3] transition-colors hover:bg-[#346416]"
+            >
+              Open Arqo
+            </a>
+            <p className="mt-6 text-[11.5px] leading-[1.6] text-mist2">
+              They only know what the page knows. Write the page first.
+            </p>
           </div>
         </div>
-
-        {dossier && (
-          <DossierSheet
-            character={character}
-            fileFraction={fraction}
-            onClose={() => setDossier(false)}
-          />
-        )}
       </div>
     </main>
   );

@@ -11,10 +11,12 @@ function textOf(m: UIMessage): string {
 }
 
 export function ChatView({
+  scriptId,
   character,
   fileFraction,
   onOpenDossier,
 }: {
+  scriptId: string;
   character: Character;
   fileFraction: string;
   onOpenDossier: () => void;
@@ -25,7 +27,9 @@ export function ChatView({
   const { messages, sendMessage, status, stop, setMessages } = useChat({
     transport: new DefaultChatTransport({
       api: "/api/chat",
-      body: { characterId: character.id },
+      // Per the /api/chat contract: client sends scriptId + characterId; the
+      // server resolves the real character + script text and owns persistence.
+      body: { scriptId, characterId: character.id },
     }),
   });
 
