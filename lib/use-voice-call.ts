@@ -92,12 +92,13 @@ export function useVoiceCall({
   }, [transcript]);
 
   // Append a turn to both the rendered transcript and the ref snapshot.
+  // The ref MUST update synchronously: respondAndSpeak() runs in the same tick
+  // as the pushTurn() in sendText()/transcribe, and React runs setState
+  // updaters asynchronously — so relying on the updater to fill the ref would
+  // post an empty `messages` list to /api/voice-reply (a 400) on the first turn.
   const pushTurn = useCallback((turn: VoiceTurn) => {
-    setTranscript((prev) => {
-      const next = [...prev, turn];
-      transcriptRef.current = next;
-      return next;
-    });
+    transcriptRef.current = [...transcriptRef.current, turn];
+    setTranscript(transcriptRef.current);
   }, []);
 
   // --- Mic teardown helper (idempotent). -----------------------------------

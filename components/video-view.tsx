@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import type { Character } from "@/lib/characters";
-import { useInterimCall } from "./interim-call";
+import { useVoiceCall } from "@/lib/use-voice-call";
 import { CallTranscript } from "./call-transcript";
 import { Hang, Mic, MicOff, Script } from "./icons";
 
@@ -24,19 +24,9 @@ export function VideoView({
   character: Character;
   onExit: () => void;
 }) {
-  const call = useInterimCall({
-    characterId: character.id,
-    characterName: character.name,
-  });
+  const call = useVoiceCall({ characterId: character.id });
   const [showScript, setShowScript] = useState(false);
   const timer = useTimer();
-  const startedRef = useRef(false);
-  useEffect(() => {
-    if (!startedRef.current) {
-      startedRef.current = true;
-      call.start();
-    }
-  }, [call]);
 
   return (
     <div className="absolute inset-0 flex flex-col gap-3 px-3.5 pb-6 pt-3.5">

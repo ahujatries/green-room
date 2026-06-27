@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import type { Turn } from "./interim-call";
+import type { VoiceTurn } from "@/lib/use-voice-call";
 import { ArrowRight, Close } from "./icons";
 
 // The "live transcript" bottom sheet shared by Voice and Video calls.
@@ -14,7 +14,7 @@ export function CallTranscript({
   onClose,
 }: {
   name: string;
-  transcript: Turn[];
+  transcript: VoiceTurn[];
   thinking: boolean;
   onSend: (text: string) => void;
   onClose: () => void;
@@ -63,7 +63,7 @@ export function CallTranscript({
             </p>
           )}
           {transcript.map((m, i) => {
-            const isAuthor = m.role === "author";
+            const isAuthor = m.role === "user";
             return (
               <div key={i} className="mb-[15px]">
                 <div

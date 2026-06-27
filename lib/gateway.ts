@@ -63,6 +63,12 @@ export function gatewayModalityHeaders(
     Authorization: `Bearer ${token}`,
     "ai-gateway-auth-method": authMethod,
     "ai-gateway-protocol-version": AI_GATEWAY_PROTOCOL_VERSION,
+    // The gateway has shipped two different model-id header conventions for the
+    // modality REST endpoints: the documented `ai-model-id` and the typed
+    // `ai-<modality>-model-id` used by the SDK's language-model call. Sending
+    // both is harmless and survives whichever the endpoint currently expects
+    // (without both, speech 400s with "Missing or empty model identifier").
+    "ai-model-id": modelId,
     [`ai-${modality}-model-id`]: modelId,
     [`ai-${modality}-model-specification-version`]: MODEL_SPECIFICATION_VERSION,
     "Content-Type": "application/json",
