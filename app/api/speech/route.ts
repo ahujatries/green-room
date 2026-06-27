@@ -18,7 +18,7 @@ const SPEECH_MODEL = process.env.SPEECH_MODEL ?? "openai/tts-1";
 const DEFAULT_VOICE = process.env.SPEECH_VOICE ?? "alloy";
 
 export async function POST(req: NextRequest) {
-  const headers = gatewayModalityHeaders("speech", SPEECH_MODEL);
+  const headers = await gatewayModalityHeaders("speech", SPEECH_MODEL);
   if (!headers) {
     return Response.json(
       {

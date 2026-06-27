@@ -22,7 +22,7 @@ export const maxDuration = 30;
 const TRANSCRIBE_MODEL = process.env.TRANSCRIBE_MODEL ?? "openai/whisper-1";
 
 export async function POST(req: NextRequest) {
-  const headers = gatewayModalityHeaders("transcription", TRANSCRIBE_MODEL);
+  const headers = await gatewayModalityHeaders("transcription", TRANSCRIBE_MODEL);
   if (!headers) {
     return Response.json(
       {

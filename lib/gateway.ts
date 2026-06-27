@@ -20,9 +20,15 @@
 // headers — a real key returns audio/text; a dummy key returns a clean
 // "Authentication failed"). See VOICE_PIPELINE.md for the full investigation.
 //
-// Auth: on Vercel the platform injects `VERCEL_OIDC_TOKEN` and the gateway
-// accepts it as a Bearer token — no key needed in prod. Locally we fall back to
-// `AI_GATEWAY_API_KEY` (the same env var the chat route documents).
+// Auth: on Vercel the platform issues a per-request OIDC token. It is NOT a
+// plain `process.env` var at runtime — it must be fetched via
+// `@vercel/functions/oidc` `getVercelOidcToken()` (this is how the AI SDK's
+// own gateway provider authenticates, which is why /api/chat works in prod but
+// a naive `process.env.VERCEL_OIDC_TOKEN` read returns nothing). Locally that
+// same helper reads the `VERCEL_OIDC_TOKEN` from `.env.local` (vercel env pull).
+// An explicit `AI_GATEWAY_API_KEY` always wins when present.
+
+import { getVercelOidcToken } from "@vercel/functions/oidc";
 
 export const AI_GATEWAY_BASE_URL =
   process.env.AI_GATEWAY_BASE_URL ?? "https://ai-gateway.vercel.sh/v4/ai";
@@ -40,8 +46,18 @@ const MODEL_SPECIFICATION_VERSION = "2";
  * OIDC token (production). Returns null when neither is present so callers can
  * surface a clean 500 instead of a cryptic upstream error.
  */
-export function getGatewayToken(): string | null {
-  return process.env.AI_GATEWAY_API_KEY ?? process.env.VERCEL_OIDC_TOKEN ?? null;
+export async function getGatewayToken(): Promise<string | null> {
+  // An explicit key always wins (local dev, or pinning to a key in prod).
+  if (process.env.AI_GATEWAY_API_KEY) return process.env.AI_GATEWAY_API_KEY;
+  // On Vercel this returns the per-request OIDC token; locally it reads
+  // VERCEL_OIDC_TOKEN from .env.local. Throws when neither is available.
+  try {
+    const token = await getVercelOidcToken();
+    if (token) return token;
+  } catch {
+    /* not running on Vercel and no local token — fall through */
+  }
+  return process.env.VERCEL_OIDC_TOKEN ?? null;
 }
 
 /**
@@ -52,11 +68,11 @@ export function getGatewayToken(): string | null {
  *                   spec-version header names the gateway protocol expects.
  * @param modelId   e.g. "openai/tts-1" or "openai/whisper-1".
  */
-export function gatewayModalityHeaders(
+export async function gatewayModalityHeaders(
   modality: "speech" | "transcription",
   modelId: string,
-): Record<string, string> | null {
-  const token = getGatewayToken();
+): Promise<Record<string, string> | null> {
+  const token = await getGatewayToken();
   if (!token) return null;
   const authMethod = process.env.AI_GATEWAY_API_KEY ? "api-key" : "oidc";
   return {
