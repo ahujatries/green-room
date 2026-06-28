@@ -1,8 +1,8 @@
 "use client";
 
-// LIBRARY — the catalog shelf. A "Featured · talk now" hero room, the
-// public-domain shelf of compact rows, and a door to paste your own. Pixel
-// port of PROTOTYPE.html's LIBRARY section, expressed in the call-sheet tokens.
+// LIBRARY — the catalog shelf. A "Featured · talk now" hero room (the single
+// Star Wars demo), an (empty-by-default) shelf for any further rooms, and a
+// door to paste your own. Expressed in the call-sheet tokens.
 
 import type { Account } from "@/components/green-room";
 import type { CatalogEntry } from "@/lib/catalog";
@@ -80,10 +80,10 @@ export function LibraryView({
           </div>
         </button>
 
-        {/* ── Public domain ────────────────────────────────────────────── */}
+        {/* ── Your scripts ─────────────────────────────────────────────── */}
         <div className="mb-[11px] mt-[18px] flex items-center gap-2.5">
           <span className="font-mono text-[9px] font-bold uppercase tracking-[0.2em] text-canopytext">
-            Public domain
+            Your scripts
           </span>
           <span className="h-0.5 flex-1 bg-brink/15" />
           <span className="font-mono text-[8px] font-medium uppercase tracking-[0.1em] text-quill">
