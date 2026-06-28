@@ -31,6 +31,47 @@ export function ttsHintsFor(kind: VoiceFxKind | undefined) {
 
 export type FxPlayback = { stop: () => void };
 
+/**
+ * Play `mp3` straight through `ctx` (no fx), calling `onended` when it finishes.
+ * Returns a handle whose stop() cuts playback (barge-in / teardown). Throws if
+ * decode fails — the caller drops to plain HTMLAudio.
+ *
+ * Why Web Audio and not `new Audio()`: Safari's autoplay policy blocks an
+ * HTMLAudioElement.play() that fires long after the click (our audio arrives
+ * only after transcribe→reply→speech). A buffer source on an AudioContext that
+ * was unlocked inside the start() gesture is exempt, so it actually sounds.
+ */
+export async function playPlain(
+  ctx: AudioContext,
+  mp3: ArrayBuffer,
+  onended: () => void,
+): Promise<FxPlayback> {
+  // decodeAudioData detaches its input; hand it a copy so a retry stays valid.
+  const buf = await ctx.decodeAudioData(mp3.slice(0));
+  const src = ctx.createBufferSource();
+  src.buffer = buf;
+  src.connect(ctx.destination);
+
+  let stopped = false;
+  const stop = () => {
+    if (stopped) return;
+    stopped = true;
+    try {
+      src.stop();
+    } catch {
+      /* already stopped */
+    }
+    src.disconnect();
+  };
+  src.onended = () => {
+    if (stopped) return;
+    stop();
+    onended();
+  };
+  src.start();
+  return { stop };
+}
+
 // The respirator is the real reference clip (one in/out cycle), fired only into
 // the pauses between phrases — not a continuous bed under the words. Fetched
 // once; decoded per AudioContext and cached.
