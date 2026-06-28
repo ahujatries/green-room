@@ -17,6 +17,7 @@
 import { generateText, type ModelMessage } from "ai";
 import type { Character, WorkScript } from "@/lib/characters";
 import { buildSystemPrompt } from "@/lib/prompt";
+import { chatModel } from "@/lib/llm";
 
 export const maxDuration = 30;
 
@@ -79,7 +80,7 @@ export async function POST(req: Request) {
 
   try {
     const { text } = await generateText({
-      model: process.env.CHAT_MODEL ?? "anthropic/claude-sonnet-4.6",
+      model: chatModel(),
       system,
       messages: modelMessages,
       temperature: 0.85,

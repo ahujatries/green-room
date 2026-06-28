@@ -1,5 +1,6 @@
 import { streamText, convertToModelMessages, type UIMessage } from "ai";
 import { buildSystemPrompt } from "@/lib/prompt";
+import { chatModel } from "@/lib/llm";
 import type { Character, WorkScript } from "@/lib/characters";
 
 // Streamed responses can run a little long; give them room on Vercel.
@@ -18,10 +19,10 @@ export async function POST(req: Request) {
     return new Response("Missing character or script", { status: 400 });
   }
 
-  // Plain string model id → routed through the Vercel AI Gateway automatically
-  // (auth via AI_GATEWAY_API_KEY locally, or OIDC when deployed on Vercel).
+  // Anthropic-direct when ANTHROPIC_API_KEY is set (no gateway credits);
+  // gateway-routed string id otherwise. See lib/llm.ts.
   const result = streamText({
-    model: process.env.CHAT_MODEL ?? "anthropic/claude-sonnet-4.6",
+    model: chatModel(),
     system: buildSystemPrompt(character, script),
     messages: convertToModelMessages(messages),
     temperature: 0.85,
