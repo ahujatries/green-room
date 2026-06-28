@@ -34,6 +34,24 @@ export function VideoView({
   >("idle");
   const timer = useTimer();
 
+  // Auto-start the continuous voice loop on entry; release the mic on exit.
+  useEffect(() => {
+    call.start();
+    return () => call.end();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const statusLabel =
+    call.status === "thinking"
+      ? "…"
+      : call.status === "speaking"
+        ? character.name.toUpperCase()
+        : call.status === "listening"
+          ? "Listening"
+          : call.micOn
+            ? "Connecting…"
+            : "Paused";
+
   // Generate an AI casting photo for this character via /api/casting (an image
   // model through the Vercel AI Gateway). Character is sent inline — no auth.
   async function generateCasting() {
@@ -127,15 +145,13 @@ export function VideoView({
         {/* Caption */}
         <div className="pointer-events-none absolute inset-x-0 bottom-0 min-h-[72px] border-t border-line bg-[rgba(243,238,227,0.95)] px-3.5 py-3">
           <div className="mb-1.5 font-mono text-[7.5px] font-bold uppercase tracking-[0.16em] text-sage">
-            {call.status === "thinking"
-              ? "…"
-              : call.status === "listening"
-                ? "Listening"
-                : character.name.toUpperCase()}
+            {statusLabel}
           </div>
           <div className="font-script text-[13.5px] leading-[1.5] text-ink">
             {call.caption ||
-              "Read them a line, or feed one in from the script."}
+              (call.micOn
+                ? "Just start talking — they're listening."
+                : "Mic paused. Tap the mic to talk, or feed a line from the script.")}
           </div>
         </div>
       </div>
@@ -144,14 +160,14 @@ export function VideoView({
       <div className="flex flex-none items-center justify-center gap-3">
         <button
           onClick={call.toggleMic}
-          aria-label="Mute"
+          aria-label={call.micOn ? "Pause listening" : "Resume listening"}
           className={`flex h-[46px] w-[46px] items-center justify-center rounded-full border transition-colors ${
             call.micOn
-              ? "border-flame bg-flame/10 text-flame"
-              : "border-bonelit/20 bg-bonelit/5 text-bonelit hover:border-spring"
+              ? "border-spring bg-spring/10 text-spring"
+              : "border-flame bg-flame/10 text-flame"
           }`}
         >
-          {call.micOn ? <MicOff size={19} /> : <Mic size={19} />}
+          {call.micOn ? <Mic size={19} /> : <MicOff size={19} />}
         </button>
         <button
           onClick={() => setShowScript(true)}

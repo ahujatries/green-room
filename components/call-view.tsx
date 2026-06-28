@@ -33,6 +33,25 @@ export function CallView({
   const timer = useTimer();
   const live = call.status === "speaking" || call.status === "listening";
 
+  // Auto-start the continuous loop on entry (OpenAI-voice style) and release the
+  // mic on exit. `start` / `end` are stable across renders.
+  useEffect(() => {
+    call.start();
+    return () => call.end();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const statusLabel =
+    call.status === "thinking"
+      ? "…"
+      : call.status === "speaking"
+        ? character.name.toUpperCase()
+        : call.status === "listening"
+          ? "Listening"
+          : call.micOn
+            ? "Connecting…"
+            : "Paused";
+
   return (
     <div className="absolute inset-0 flex flex-col gap-3 px-3.5 pb-6 pt-3.5">
       {/* The well */}
@@ -61,11 +80,20 @@ export function CallView({
             <span className="absolute inset-0 rounded-full border border-spring/20" />
             <span className="absolute inset-[18px] rounded-full border border-spring/40" />
             <span
-              className={`flex h-[120px] w-[120px] items-center justify-center rounded-full bg-canopy font-script text-[52px] text-[#f3eee3] transition-shadow ${
-                call.status === "speaking"
-                  ? "shadow-[0_0_0_6px_rgba(165,232,87,0.18)]"
-                  : ""
-              }`}
+              className="flex h-[120px] w-[120px] items-center justify-center rounded-full bg-canopy font-script text-[52px] text-[#f3eee3] transition-transform duration-100"
+              style={{
+                // Listening: pulse with the writer's voice. Speaking: steady glow.
+                transform:
+                  call.status === "listening"
+                    ? `scale(${1 + call.level * 0.08})`
+                    : "scale(1)",
+                boxShadow:
+                  call.status === "speaking"
+                    ? "0 0 0 6px rgba(165,232,87,0.18)"
+                    : call.status === "listening"
+                      ? `0 0 0 ${2 + call.level * 14}px rgba(165,232,87,${0.06 + call.level * 0.22})`
+                      : "none",
+              }}
             >
               {character.initial}
             </span>
@@ -79,35 +107,42 @@ export function CallView({
             </div>
           </div>
           <div className="flex h-7 items-center gap-1">
-            {BARS.map((h, i) => (
-              <span
-                key={i}
-                className={live ? "wavebar" : ""}
-                style={{
-                  height: h,
-                  animationDelay: `${i * 0.06}s`,
-                  background: "var(--color-spring)",
-                  width: 3,
-                  borderRadius: 2,
-                  opacity: live ? 1 : 0.4,
-                }}
-              />
-            ))}
+            {BARS.map((h, i) => {
+              // While listening, the bars track the writer's live mic level;
+              // while speaking, they animate; otherwise they rest.
+              const listening = call.status === "listening";
+              const height = listening
+                ? Math.max(4, h * (0.3 + call.level * 1.4))
+                : h;
+              return (
+                <span
+                  key={i}
+                  className={call.status === "speaking" ? "wavebar" : ""}
+                  style={{
+                    height,
+                    animationDelay: `${i * 0.06}s`,
+                    background: "var(--color-spring)",
+                    width: 3,
+                    borderRadius: 2,
+                    opacity: live ? 1 : 0.4,
+                    transition: "height 0.08s linear",
+                  }}
+                />
+              );
+            })}
           </div>
         </div>
 
         {/* Caption */}
         <div className="relative flex-none border-t border-line bg-[rgba(243,238,227,0.95)] px-3.5 py-3 min-h-[74px]">
           <div className="mb-1.5 font-mono text-[7.5px] font-bold uppercase tracking-[0.16em] text-sage">
-            {call.status === "thinking"
-              ? "…"
-              : call.status === "listening"
-                ? "Listening"
-                : character.name.toUpperCase()}
+            {statusLabel}
           </div>
           <div className="font-script text-[13.5px] leading-[1.5] text-ink">
             {call.caption ||
-              "Tap the mic and speak — or open the script to feed them a line."}
+              (call.micOn
+                ? "Just start talking — I'm listening."
+                : "Mic paused. Tap the mic to talk, or open the script to feed a line.")}
           </div>
         </div>
       </div>
@@ -116,14 +151,14 @@ export function CallView({
       <div className="flex flex-none items-center justify-center gap-3">
         <button
           onClick={call.toggleMic}
-          aria-label="Mute"
+          aria-label={call.micOn ? "Pause listening" : "Resume listening"}
           className={`flex h-[46px] w-[46px] items-center justify-center rounded-full border transition-colors ${
             call.micOn
-              ? "border-flame bg-flame/10 text-flame"
-              : "border-bonelit/20 bg-bonelit/5 text-bonelit hover:border-spring"
+              ? "border-spring bg-spring/10 text-spring"
+              : "border-flame bg-flame/10 text-flame"
           }`}
         >
-          {call.micOn ? <MicOff size={19} /> : <Mic size={19} />}
+          {call.micOn ? <Mic size={19} /> : <MicOff size={19} />}
         </button>
         <button
           onClick={() => setShowScript(true)}

@@ -1,4 +1,9 @@
-// POST /api/transcribe — speech-to-text via the Vercel AI Gateway (whisper-1).
+// POST /api/transcribe — speech-to-text via OpenAI Whisper, called directly.
+//
+// We call api.openai.com straight (not the Vercel AI Gateway): the gateway's
+// audio modality was 502-ing in production on the free tier, the same wall that
+// already forced chat + voice-reply onto a direct provider. Whisper is an OpenAI
+// model, so the direct path is OpenAI.
 //
 // Accepts EITHER:
 //   • multipart/form-data with an `audio` file field (what MediaRecorder + a
@@ -8,34 +13,28 @@
 //
 // Returns: { text: string }   (200)
 //          { error: string }  (4xx/5xx)
-//
-// We call the Gateway's REST transcription endpoint directly rather than the
-// `@ai-sdk/gateway` helper — see lib/gateway.ts for why (keeps the repo on ai@5).
 
 import { NextRequest } from "next/server";
-import { AI_GATEWAY_BASE_URL, gatewayModalityHeaders } from "@/lib/gateway";
 
 // Transcription of a short utterance is quick, but give it headroom on Vercel.
 export const maxDuration = 30;
 
-// Whisper via the Gateway. Overridable for testing / model swaps.
-const TRANSCRIBE_MODEL = process.env.TRANSCRIBE_MODEL ?? "openai/whisper-1";
+// Whisper via OpenAI. Overridable for testing / model swaps.
+const TRANSCRIBE_MODEL = process.env.TRANSCRIBE_MODEL ?? "whisper-1";
+const OPENAI_TRANSCRIBE_URL = "https://api.openai.com/v1/audio/transcriptions";
 
 export async function POST(req: NextRequest) {
-  const headers = await gatewayModalityHeaders("transcription", TRANSCRIBE_MODEL);
-  if (!headers) {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) {
     return Response.json(
-      {
-        error:
-          "AI Gateway is not configured. Set AI_GATEWAY_API_KEY locally (OIDC handles this in production).",
-      },
+      { error: "Transcription is not configured. Set OPENAI_API_KEY." },
       { status: 500 },
     );
   }
 
-  // --- 1. Normalize the incoming audio into a base64 string + media type. ---
-  let audioBase64: string;
-  let mediaType: string;
+  // --- 1. Normalize the incoming audio into a Blob + filename. ---
+  let audioBlob: Blob;
+  let filename: string;
 
   const contentType = req.headers.get("content-type") ?? "";
 
@@ -49,19 +48,14 @@ export async function POST(req: NextRequest) {
           { status: 400 },
         );
       }
-      const buf = Buffer.from(await file.arrayBuffer());
-      if (buf.byteLength === 0) {
+      if (file.size === 0) {
         return Response.json({ error: "Empty audio upload." }, { status: 400 });
       }
-      audioBase64 = buf.toString("base64");
-      // Blob.type is the most reliable hint (e.g. "audio/webm;codecs=opus").
-      mediaType = file.type || "audio/webm";
+      audioBlob = file;
+      filename = (file instanceof File && file.name) || "speech.webm";
     } else {
       // Assume JSON { audio: base64, mediaType? }.
-      const body = (await req.json()) as {
-        audio?: string;
-        mediaType?: string;
-      };
+      const body = (await req.json()) as { audio?: string; mediaType?: string };
       if (!body.audio || typeof body.audio !== "string") {
         return Response.json(
           { error: "Missing `audio` (base64 string) in JSON body." },
@@ -69,10 +63,19 @@ export async function POST(req: NextRequest) {
         );
       }
       // Tolerate a data: URL prefix if a caller sends one.
-      audioBase64 = body.audio.includes(",")
+      const base64 = body.audio.includes(",")
         ? body.audio.slice(body.audio.indexOf(",") + 1)
         : body.audio;
-      mediaType = body.mediaType ?? "audio/webm";
+      const mediaType = body.mediaType ?? "audio/webm";
+      audioBlob = new Blob([Buffer.from(base64, "base64")], { type: mediaType });
+      const ext = mediaType.includes("mp4")
+        ? "mp4"
+        : mediaType.includes("mpeg")
+          ? "mp3"
+          : mediaType.includes("wav")
+            ? "wav"
+            : "webm";
+      filename = `speech.${ext}`;
     }
   } catch {
     return Response.json(
@@ -81,12 +84,16 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  // --- 2. Hand the audio to the Gateway transcription endpoint. ---
+  // --- 2. Hand the audio to OpenAI's transcription endpoint (multipart). ---
   try {
-    const upstream = await fetch(`${AI_GATEWAY_BASE_URL}/transcription-model`, {
+    const upstreamForm = new FormData();
+    upstreamForm.append("file", audioBlob, filename);
+    upstreamForm.append("model", TRANSCRIBE_MODEL);
+
+    const upstream = await fetch(OPENAI_TRANSCRIBE_URL, {
       method: "POST",
-      headers,
-      body: JSON.stringify({ audio: audioBase64, mediaType }),
+      headers: { Authorization: `Bearer ${apiKey}` },
+      body: upstreamForm,
     });
 
     if (!upstream.ok) {
