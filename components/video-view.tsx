@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import type { Character, WorkScript } from "@/lib/characters";
 import { useVoiceCall } from "@/lib/use-voice-call";
 import { CallTranscript } from "./call-transcript";
-import { Hang, Mic, MicOff, Script } from "./icons";
+import { Hang, Script } from "./icons";
 
 function useTimer() {
   const [s, setS] = useState(0);
@@ -48,9 +48,7 @@ export function VideoView({
         ? character.name.toUpperCase()
         : call.status === "listening"
           ? "Listening"
-          : call.micOn
-            ? "Connecting…"
-            : "Paused";
+          : "Connecting…";
 
   // Generate an AI casting photo for this character via /api/casting (an image
   // model through the Vercel AI Gateway). Character is sent inline — no auth.
@@ -149,26 +147,13 @@ export function VideoView({
           </div>
           <div className="font-script text-[13.5px] leading-[1.5] text-ink">
             {call.caption ||
-              (call.micOn
-                ? "Just start talking — they're listening."
-                : "Mic paused. Tap the mic to talk, or feed a line from the script.")}
+              "Just start talking — they're listening. You can cut in anytime."}
           </div>
         </div>
       </div>
 
       {/* Controls */}
       <div className="flex flex-none items-center justify-center gap-3">
-        <button
-          onClick={call.toggleMic}
-          aria-label={call.micOn ? "Pause listening" : "Resume listening"}
-          className={`flex h-[46px] w-[46px] items-center justify-center rounded-full border transition-colors ${
-            call.micOn
-              ? "border-spring bg-spring/10 text-spring"
-              : "border-flame bg-flame/10 text-flame"
-          }`}
-        >
-          {call.micOn ? <Mic size={19} /> : <MicOff size={19} />}
-        </button>
         <button
           onClick={() => setShowScript(true)}
           className="flex h-[46px] items-center gap-2 rounded-full border border-bonelit/20 bg-bonelit/5 px-[18px] font-mono text-[9px] font-bold uppercase tracking-[0.12em] text-bonelit transition-colors hover:border-spring"
