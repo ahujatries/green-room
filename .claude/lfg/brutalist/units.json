@@ -1,0 +1,16 @@
+{
+  "campaign": "brutalist-call-sheet",
+  "repo": "ahujatries/green-room",
+  "branch": "feat/brutalist-call-sheet",
+  "base": "origin/main@11e8249",
+  "spine": { "status": "merged", "commit": "a89ebfa", "build": "green" },
+  "waveA_data": {
+    "status": "in-flight",
+    "units": ["hamlet","a-dolls-house","earnest","cyrano","pygmalion","caligari","nosferatu"]
+  },
+  "waveB_screens": {
+    "status": "in-flight",
+    "units": ["entry-view","consent-view","library-view","detail-view","chat-view","call-view+transcript","video-view","dossier-sheet"]
+  },
+  "workflow_run": "wf_2b3f5430-407"
+}

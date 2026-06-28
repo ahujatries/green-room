@@ -1,244 +1,301 @@
 "use client";
 
-// The client root of The Green Room (no auth, no DB).
+// The client root of The Green Room — call-sheet brutalist flow.
 //
-// It owns the one piece of app state: the current "room" — a pasted script plus
-// its derived cast — persisted to localStorage so a refresh keeps you inside.
-// No room yet → the add-script screen. A room → the shell (home / chat / call /
-// video), with a "new script" affordance to swap the page out.
+// A small screen state machine inside one phone-shaped "field":
+//   entry → consent → library → detail → chat / call / video
+// The library is the curated catalog (lib/catalog.ts); a writer can also paste
+// their own script (AddScript), which becomes a "custom" room handled exactly
+// like a catalog entry. No auth, no DB — the room is passed inline to the
+// chat/voice routes, and a pasted room is remembered in localStorage.
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
-import type { Character, Room, WorkScript } from "@/lib/characters";
+import type { Character, Room } from "@/lib/characters";
 import { fileFraction } from "@/lib/characters";
-import type { ScriptListItem } from "@/lib/data/scripts";
+import { FEATURED, WORKS, getWork, type CatalogEntry } from "@/lib/catalog";
 import { AddScript } from "@/components/add-script";
-import { HomeView, type Mode } from "@/components/home-view";
+import { EntryView } from "@/components/entry-view";
+import { ConsentView } from "@/components/consent-view";
+import { LibraryView } from "@/components/library-view";
+import { DetailView } from "@/components/detail-view";
 import { ChatView } from "@/components/chat-view";
 import { CallView } from "@/components/call-view";
 import { VideoView } from "@/components/video-view";
 import { DossierSheet } from "@/components/dossier-sheet";
-import { Back } from "@/components/icons";
+
+export type Screen =
+  | "entry"
+  | "consent"
+  | "library"
+  | "detail"
+  | "chat"
+  | "call"
+  | "video";
+export type Account = "none" | "free" | "arqo";
+export type Mode = "chat" | "call" | "video";
 
 const STORAGE_KEY = "gr:room:v1";
+const CUSTOM = "custom";
+
+// One nav frame, snapshotted onto a back-stack so the brutalist back button
+// retraces the exact path (library → detail → chat → back → back …).
+type Frame = { screen: Screen; workId: string | null; charId: string | null };
 
 export function GreenRoom() {
-  const [room, setRoom] = useState<Room | null>(null);
-  const [ready, setReady] = useState(false);
-
-  // Load any saved room once, on the client, to avoid a hydration mismatch.
-  useEffect(() => {
-    try {
-      const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) {
-        const parsed = JSON.parse(raw) as Room;
-        if (parsed?.script?.text && Array.isArray(parsed.cast) && parsed.cast.length) {
-          setRoom(parsed);
-        }
-      }
-    } catch {
-      /* ignore corrupt storage */
-    }
-    setReady(true);
-  }, []);
-
-  function open(next: Room) {
-    setRoom(next);
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
-    } catch {
-      /* storage full / disabled — room still works for this session */
-    }
-  }
-
-  function clear() {
-    setRoom(null);
-    try {
-      localStorage.removeItem(STORAGE_KEY);
-    } catch {
-      /* ignore */
-    }
-  }
-
-  // Avoid a flash of the wrong screen before localStorage is read.
-  if (!ready) {
-    return <main className="min-h-dvh w-full bg-void" />;
-  }
-
-  if (!room) {
-    return <AddScript onReady={open} />;
-  }
-
-  return <RoomShell room={room} onNewScript={clear} />;
-}
-
-// One page count estimate so the home meta line reads like the demo's "12 pp".
-function estimatePages(text: string): number {
-  const lines = text.split(/\r?\n/).length;
-  return Math.max(1, Math.round(lines / 55));
-}
-
-type View = "home" | "chat" | "call" | "video";
-
-const MODE_LABEL: Record<Exclude<View, "home">, string> = {
-  chat: "Chat",
-  call: "Call",
-  video: "Video Call",
-};
-
-function RoomShell({
-  room,
-  onNewScript,
-}: {
-  room: Room;
-  onNewScript: () => void;
-}) {
-  const { script, cast } = room;
-
-  const [view, setView] = useState<View>("home");
-  const [charId, setCharId] = useState<string | null>(cast[0]?.id ?? null);
+  const [screen, setScreen] = useState<Screen>("entry");
+  const [account, setAccount] = useState<Account>("none");
+  const [workId, setWorkId] = useState<string | null>(null);
+  const [charId, setCharId] = useState<string | null>(null);
+  const [customRoom, setCustomRoom] = useState<Room | null>(null);
   const [dossier, setDossier] = useState(false);
+  const [adding, setAdding] = useState(false);
+  const [, setHistory] = useState<Frame[]>([]);
 
-  const character = cast.find((c) => c.id === charId);
-  const isHome = view === "home";
+  // The active catalog entry — a real catalog work, or a synthesized entry that
+  // wraps a pasted script so every downstream screen stays catalog-shaped.
+  const entry: CatalogEntry | null =
+    workId === CUSTOM && customRoom
+      ? {
+          id: CUSTOM,
+          eyebrow: "Your script",
+          meta: customRoom.script.format || "your script",
+          script: customRoom.script,
+          cast: customRoom.cast,
+        }
+      : workId
+        ? (getWork(workId) ?? null)
+        : null;
+
+  const character: Character | undefined = entry?.cast.find(
+    (c) => c.id === charId,
+  );
   const fraction = character ? fileFraction(character) : "0/0";
 
-  // HomeView is built for the Arqo-script list shape; give it a one-item list
-  // synthesized from the pasted script so the cast cards render unchanged.
-  const listItem: ScriptListItem = {
-    id: "work",
-    title: script.title,
-    logline: script.logline || null,
-    synopsis: null,
-    format: script.format || null,
-    pageCount: estimatePages(script.text),
-    updatedAt: null,
-  };
+  function nav(next: Screen, patch: Partial<Frame> = {}) {
+    setHistory((h) => [...h, { screen, workId, charId }]);
+    if ("workId" in patch) setWorkId(patch.workId ?? null);
+    if ("charId" in patch) setCharId(patch.charId ?? null);
+    setDossier(false);
+    setScreen(next);
+  }
 
+  function back() {
+    setDossier(false);
+    setHistory((h) => {
+      const prev = h[h.length - 1];
+      if (!prev) {
+        setScreen("entry");
+        return h;
+      }
+      setScreen(prev.screen);
+      setWorkId(prev.workId);
+      setCharId(prev.charId);
+      return h.slice(0, -1);
+    });
+  }
+
+  function openWork(id: string) {
+    nav("detail", { workId: id, charId: null });
+  }
   function enter(id: string, mode: Mode) {
-    setCharId(id);
-    setView(mode);
-    setDossier(false);
+    nav(mode, { charId: id });
   }
-  function goHome() {
-    setView("home");
-    setDossier(false);
+
+  // Pasted-script path: AddScript overlay → custom room → its detail screen.
+  function onReadyCustom(room: Room) {
+    setCustomRoom(room);
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(room));
+    } catch {
+      /* storage full / disabled — room still works this session */
+    }
+    setAdding(false);
+    nav("detail", { workId: CUSTOM, charId: null });
   }
+
+  if (adding) {
+    return <AddScript onReady={onReadyCustom} />;
+  }
+
+  const showBrand =
+    screen === "entry" || screen === "consent" || screen === "library";
+  const showBack = screen === "detail" || screen === "chat";
+  const bare = screen === "call" || screen === "video"; // full-bleed, own chrome
+  const backLabel = account === "none" ? "The Green Room" : "The Library";
+
+  const acctMap: Record<
+    Account,
+    { label: string; name: string; initial: string }
+  > = {
+    none: { label: "Guest", name: "no account", initial: "·" },
+    free: { label: "Free account", name: "reader", initial: "+" },
+    arqo: { label: "Signed in", name: "Isabella", initial: "I" },
+  };
+  const acct = acctMap[account];
 
   return (
-    <main className="min-h-dvh w-full bg-void">
-      <div className="shell-bg grain relative mx-auto flex h-dvh w-full max-w-[440px] flex-col overflow-hidden font-sans text-bonelit sm:my-4 sm:h-[860px] sm:max-h-[calc(100dvh-2rem)] sm:rounded-[28px] sm:border sm:border-bonelit/10 sm:shadow-[0_40px_120px_-30px_rgba(0,0,0,0.9)]">
-        {/* spiral watermark */}
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src="/arqo-spiral.svg"
-          alt=""
-          className="pointer-events-none absolute -bottom-[90px] -right-[70px] z-0 w-[380px] opacity-[0.045]"
-        />
+    <main className="flex min-h-dvh w-full items-center justify-center bg-forest p-0 font-sans sm:p-6">
+      <div className="relative flex h-dvh w-full max-w-[440px] flex-col overflow-hidden bg-field text-brink sm:h-[860px] sm:max-h-[calc(100dvh-3rem)] sm:border-2 sm:border-brink sm:shadow-[10px_10px_0_0_var(--color-forestdeep)]">
+        {/* clap-stripe cap */}
+        <div className="clap h-[10px] flex-none border-b-2 border-brink" />
 
-        <div className="relative z-10 flex h-full flex-col">
-          {/* bulb strip */}
-          <div className="flex h-[14px] flex-none items-center justify-between border-b border-black/40 bg-[rgba(6,13,8,0.5)] px-4">
-            {Array.from({ length: 16 }).map((_, i) => (
-              <span key={i} className="bulb" />
-            ))}
-          </div>
-
-          {/* header */}
-          {isHome ? (
-            <header className="flex flex-none items-center gap-[9px] border-b border-bonelit/10 px-[18px] pb-[11px] pt-[13px]">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src="/arqo-spiral.svg"
-                alt="Arqo"
-                className="h-[22px] w-[22px] flex-none"
-              />
-              <span className="font-sans text-[18px] font-black tracking-tight text-bonelit">
-                the green room
-              </span>
-              <span className="font-mono text-[8px] font-bold uppercase tracking-[0.16em] text-springpale">
-                by Arqo
-              </span>
-              <div className="flex-1" />
-              <button
-                onClick={onNewScript}
-                className="rounded-full border border-bonelit/20 bg-bonelit/5 px-[12px] py-1.5 font-mono text-[8.5px] font-bold uppercase tracking-[0.12em] text-fog transition-colors hover:border-spring hover:text-bonelit"
-              >
-                new script
-              </button>
-            </header>
-          ) : (
-            <header className="flex flex-none items-center gap-[11px] border-b border-bonelit/10 px-3.5 py-[11px]">
-              <button
-                onClick={goHome}
-                aria-label="Back"
-                className="flex h-[34px] w-[34px] flex-none items-center justify-center rounded-full border border-bonelit/20 bg-bonelit/5 text-fog transition-colors hover:border-spring"
-              >
-                <Back size={15} stroke={2.2} />
-              </button>
-              <div className="min-w-0">
-                <div className="truncate font-mono text-[8.5px] font-medium uppercase tracking-[0.13em] text-mist">
-                  {script.title || "Untitled"}
-                </div>
-                <div className="mt-1.5 flex items-center gap-1.5">
-                  <span className="font-script text-[12.5px] font-bold text-bonelit">
-                    {character?.name ?? "—"}
+        {/* ── Brand header (entry / consent / library) ─────────────────── */}
+        {showBrand && (
+          <header className="flex flex-none items-center gap-[9px] border-b-2 border-brink bg-headerdeep px-4 py-[13px]">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/arqo-spiral.svg" alt="Arqo" className="h-8 w-8 flex-none" />
+            <span className="font-sans text-[16px] font-black uppercase leading-none tracking-[-0.01em] text-callbone">
+              The <span className="text-spring">Green</span> Room
+            </span>
+            <span className="flex-1" />
+            {screen === "library" ? (
+              <span className="flex items-center gap-2">
+                <span className="text-right">
+                  <span className="block font-mono text-[7.5px] font-bold uppercase tracking-[0.1em] text-spring">
+                    {acct.label}
                   </span>
-                  <span className="font-mono text-[8px] font-bold uppercase tracking-[0.12em] text-springpale">
-                    · {MODE_LABEL[view]}
+                  <span className="block font-mono text-[8px] text-field">
+                    {acct.name}
                   </span>
-                </div>
-              </div>
-              <div className="flex-1" />
-              <button
-                onClick={goHome}
-                aria-label="Home"
-                className="flex h-[34px] w-[34px] flex-none items-center justify-center opacity-70 transition-opacity hover:opacity-100"
-              >
+                </span>
+                <span className="flex h-[30px] w-[30px] flex-none items-center justify-center rounded-full border-2 border-brink bg-spring font-script text-[14px] font-bold text-brink">
+                  {acct.initial}
+                </span>
+              </span>
+            ) : (
+              <span className="flex items-center gap-2 whitespace-nowrap">
+                <span className="font-mono text-[9px] font-bold uppercase tracking-[0.16em] text-spring">
+                  By
+                </span>
                 {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/arqo-spiral.svg" alt="home" className="h-5 w-5" />
-              </button>
-            </header>
-          )}
+                <img src="/arqo-spiral.svg" alt="" className="h-[21px] w-[21px]" />
+                <span className="font-sans text-[19px] font-black tracking-[-0.04em] text-callbone">
+                  arqo
+                </span>
+              </span>
+            )}
+          </header>
+        )}
 
-          {/* content */}
-          <div className="relative min-h-0 flex-1">
-            {view === "home" && (
-              <HomeView
-                script={listItem}
-                scripts={[listItem]}
-                onSelectScript={() => {}}
-                switching={false}
-                characters={cast}
-                onEnter={enter}
-              />
+        {/* ── Back header (detail / chat) ──────────────────────────────── */}
+        {showBack && (
+          <header className="flex flex-none items-center gap-[11px] border-b-2 border-brink bg-header px-3.5 py-[11px]">
+            <button
+              onClick={back}
+              aria-label="Back"
+              className="flex h-8 w-8 flex-none items-center justify-center border-2 border-brink bg-bonepaper"
+            >
+              <svg
+                width="14"
+                height="14"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="#1A2418"
+                strokeWidth="2.4"
+                strokeLinecap="square"
+              >
+                <path d="M15 5l-7 7 7 7" />
+              </svg>
+            </button>
+            {screen === "detail" ? (
+              <>
+                <span className="font-mono text-[9px] font-bold uppercase tracking-[0.13em] text-field">
+                  {backLabel}
+                </span>
+                <span className="flex-1" />
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src="/arqo-spiral.svg" alt="" className="h-5 w-5" />
+              </>
+            ) : (
+              <>
+                <span className="min-w-0">
+                  <span className="block truncate font-mono text-[8px] font-medium uppercase tracking-[0.13em] text-springdim">
+                    {entry?.script.title}
+                  </span>
+                  <span className="mt-0.5 block">
+                    <span className="font-script text-[13px] font-bold text-callbone">
+                      {character?.name}
+                    </span>{" "}
+                    <span className="font-mono text-[8px] font-bold uppercase tracking-[0.1em] text-spring">
+                      · Chat
+                    </span>
+                  </span>
+                </span>
+                <span className="flex-1" />
+                <span className="border-2 border-spring px-2 py-[5px] font-mono text-[8px] font-bold uppercase tracking-[0.1em] text-field">
+                  File {fraction}
+                </span>
+              </>
             )}
-            {view === "chat" && character && (
-              <ChatView
-                key={character.id}
-                script={script}
-                character={character}
-                fileFraction={fraction}
-                onOpenDossier={() => setDossier(true)}
-              />
-            )}
-            {view === "call" && character && (
-              <CallView
-                key={character.id}
-                character={character}
-                script={script}
-                onExit={goHome}
-              />
-            )}
-            {view === "video" && character && (
-              <VideoView
-                key={character.id}
-                character={character}
-                script={script}
-                onExit={goHome}
-              />
-            )}
-          </div>
+          </header>
+        )}
+
+        {/* ── Screen body ──────────────────────────────────────────────── */}
+        <div
+          className={
+            bare
+              ? "relative flex min-h-0 flex-1 flex-col"
+              : "relative min-h-0 flex-1"
+          }
+        >
+          {screen === "entry" && (
+            <EntryView
+              featured={FEATURED}
+              onMeetCast={() => openWork(FEATURED.id)}
+              onConnect={() => nav("consent")}
+            />
+          )}
+          {screen === "consent" && (
+            <ConsentView
+              onCreateFree={() => {
+                setAccount("free");
+                nav("library");
+              }}
+              onAuthorize={() => {
+                setAccount("arqo");
+                nav("library");
+              }}
+              onBack={back}
+            />
+          )}
+          {screen === "library" && (
+            <LibraryView
+              featured={FEATURED}
+              works={WORKS.filter((w) => w.id !== FEATURED.id)}
+              account={account}
+              onOpen={openWork}
+              onPasteOwn={() => setAdding(true)}
+            />
+          )}
+          {screen === "detail" && entry && (
+            <DetailView entry={entry} onEnter={enter} />
+          )}
+          {screen === "chat" && character && entry && (
+            <ChatView
+              key={character.id}
+              script={entry.script}
+              character={character}
+              fileFraction={fraction}
+              onOpenDossier={() => setDossier(true)}
+            />
+          )}
+          {screen === "call" && character && entry && (
+            <CallView
+              key={character.id}
+              character={character}
+              script={entry.script}
+              onExit={back}
+            />
+          )}
+          {screen === "video" && character && entry && (
+            <VideoView
+              key={character.id}
+              character={character}
+              script={entry.script}
+              onExit={back}
+            />
+          )}
         </div>
 
         {dossier && character && (
@@ -255,5 +312,4 @@ function RoomShell({
 
 export default GreenRoom;
 
-// Re-export for callers that want the room type at the component boundary.
-export type { Character, WorkScript };
+export type { Character };

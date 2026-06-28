@@ -26,6 +26,25 @@
   --color-sage: #8a9a7b;
   --color-flame: #e8633a;
 
+  /* ══ Call-sheet brutalist layer ════════════════════════════════════════
+     The new Green Room skin. Light olive "field" inside a deep-forest page,
+     hard offset shadows, 2px ink borders, clap-stripe. Additive — the old
+     dressing-room tokens above stay for surfaces not yet re-skinned. */
+  --color-forest: #16280f; /* page behind the phone · dark panels */
+  --color-forestdeep: #0b1607; /* deepest green — outer shadow, wells */
+  --color-field: #d7e8ae; /* the phone body / app field */
+  --color-brink: #1a2418; /* brutalist ink — every border + text on light */
+  --color-bonepaper: #fbf8ee; /* card paper on the field */
+  --color-header: #3f7a1c; /* header green */
+  --color-headerdeep: #275b08; /* sub-header / pressed green */
+  --color-springdim: #a7be86; /* muted spring label on dark */
+  --color-canopytext: #3f7a1c; /* mono eyebrow labels on light */
+  --color-quill: #5a6450; /* muted mono meta on light */
+  --color-quill2: #8fa383; /* muted text on dark wells */
+  --color-callbone: #f7f2e6; /* warm bone text on call/video dark */
+  --color-callfog: #efe9db; /* secondary bone on dark */
+  --color-flamecall: #b95236; /* end-call red */
+
   --font-sans: var(--font-geist-sans), system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
   --font-script: var(--font-courier), "Courier New", monospace;
@@ -159,4 +178,61 @@ body {
 }
 .rise {
   animation: rise 0.32s ease-out both;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════
+   CALL-SHEET BRUTALIST UTILITIES
+   The shared visual grammar every re-skinned screen uses. Keep these in sync
+   with .claude/lfg/brutalist/DESIGN-CONTRACT.md.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* The production clap-stripe that caps the phone frame. */
+.clap {
+  background: repeating-linear-gradient(
+    90deg,
+    #14310c 0 13px,
+    #a5e857 13px 26px
+  );
+}
+
+/* Hard offset shadows — the signature of the look. No blur, pure ink block.
+   Use the size that matches the element's weight (sm cards → lg hero). */
+.hard-sm {
+  box-shadow: 3px 3px 0 0 var(--color-brink);
+}
+.hard {
+  box-shadow: 4px 4px 0 0 var(--color-brink);
+}
+.hard-lg {
+  box-shadow: 6px 6px 0 0 var(--color-brink);
+}
+.hard-deep {
+  box-shadow: 4px 4px 0 0 var(--color-forestdeep);
+}
+
+/* Press-lift: a card that nudges up-left and deepens its shadow on hover.
+   Pair with .hard on a 2px-ink-bordered card to get the prototype's cards. */
+.lift {
+  transition:
+    transform 0.12s ease,
+    box-shadow 0.12s ease;
+}
+.lift:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 6px 6px 0 0 var(--color-brink);
+}
+
+/* Card entrance for newly-arrived rows / messages. */
+@keyframes pop {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+.pop {
+  animation: pop 0.26s cubic-bezier(0.22, 0.61, 0.36, 1) both;
 }
