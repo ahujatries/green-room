@@ -1,40 +1,40 @@
-// POST /api/speech — text-to-speech via the Vercel AI Gateway (tts-1).
+// POST /api/speech — text-to-speech, called directly (no Vercel AI Gateway).
+//
+// Two providers:
+//   • OpenAI tts-1 — the default for everyone (logged out, free, pro). Reliable,
+//     cheap, ships now. This replaces the gateway path that was 502-ing in prod.
+//   • ElevenLabs — higher-quality, more characterful voice, served ONLY to
+//     premium tiers (studio/staff/max) and ONLY when ELEVENLABS_API_KEY is set.
+//     Until both are in place the feature is dormant and everyone gets OpenAI.
 //
 // Request:  { text: string, voice?: string }
-// Response: 200 with the raw MP3 bytes and Content-Type: audio/mpeg
+// Response: 200 with raw MP3 bytes and Content-Type: audio/mpeg
 //           (so the client can do `new Audio(URL.createObjectURL(blob))`)
 //           On error: JSON { error } with a 4xx/5xx status.
-//
-// We call the Gateway's REST speech endpoint directly (returns base64 audio) and
-// re-emit it as binary. See lib/gateway.ts for why REST over the SDK helper.
 
 import { NextRequest } from "next/server";
-import { AI_GATEWAY_BASE_URL, gatewayModalityHeaders } from "@/lib/gateway";
+import { canUsePremiumVoice } from "@/lib/tier";
 
 export const maxDuration = 30;
 
-const SPEECH_MODEL = process.env.SPEECH_MODEL ?? "openai/tts-1";
-// "alloy" is the neutral default; the UI can pass a per-character voice.
-const DEFAULT_VOICE = process.env.SPEECH_VOICE ?? "alloy";
+// OpenAI TTS — the default provider.
+const OPENAI_SPEECH_URL = "https://api.openai.com/v1/audio/speech";
+const OPENAI_SPEECH_MODEL = process.env.SPEECH_MODEL ?? "tts-1";
+const OPENAI_DEFAULT_VOICE = process.env.SPEECH_VOICE ?? "alloy";
+
+// ElevenLabs — the premium provider.
+const ELEVENLABS_MODEL = process.env.ELEVENLABS_MODEL ?? "eleven_turbo_v2_5";
+// A sensible default voice id; per-character voices can be layered on later.
+const ELEVENLABS_DEFAULT_VOICE =
+  process.env.ELEVENLABS_VOICE_ID ?? "21m00Tcm4TlvDq8ikWAM"; // "Rachel"
 
 export async function POST(req: NextRequest) {
-  const headers = await gatewayModalityHeaders("speech", SPEECH_MODEL);
-  if (!headers) {
-    return Response.json(
-      {
-        error:
-          "AI Gateway is not configured. Set AI_GATEWAY_API_KEY locally (OIDC handles this in production).",
-      },
-      { status: 500 },
-    );
-  }
-
   let text: string;
-  let voice: string;
+  let voice: string | undefined;
   try {
     const body = (await req.json()) as { text?: string; voice?: string };
     text = (body.text ?? "").trim();
-    voice = body.voice?.trim() || DEFAULT_VOICE;
+    voice = body.voice?.trim() || undefined;
   } catch {
     return Response.json({ error: "Invalid JSON body." }, { status: 400 });
   }
@@ -46,47 +46,99 @@ export async function POST(req: NextRequest) {
     );
   }
 
-  try {
-    const upstream = await fetch(`${AI_GATEWAY_BASE_URL}/speech-model`, {
-      method: "POST",
-      headers,
-      body: JSON.stringify({ text, voice, outputFormat: "mp3" }),
-    });
+  // Premium users on a configured ElevenLabs key get the richer voice; everyone
+  // else (and any failure to confirm tier) falls through to OpenAI.
+  if (await canUsePremiumVoice()) {
+    const result = await synthesizeElevenLabs(text, voice);
+    if (result) return result;
+    // ElevenLabs failed — degrade to OpenAI rather than 500 the call.
+  }
 
+  return synthesizeOpenAI(text, voice);
+}
+
+// --- OpenAI tts-1 ---------------------------------------------------------
+async function synthesizeOpenAI(
+  text: string,
+  voice: string | undefined,
+): Promise<Response> {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) {
+    return Response.json(
+      { error: "Speech is not configured. Set OPENAI_API_KEY." },
+      { status: 500 },
+    );
+  }
+  try {
+    const upstream = await fetch(OPENAI_SPEECH_URL, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${apiKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: OPENAI_SPEECH_MODEL,
+        input: text,
+        voice: voice || OPENAI_DEFAULT_VOICE,
+        response_format: "mp3",
+      }),
+    });
     if (!upstream.ok) {
       const detail = await upstream.text().catch(() => "");
       return Response.json(
-        {
-          error: `Speech upstream failed (${upstream.status}).`,
-          detail: detail.slice(0, 500),
-        },
+        { error: `Speech upstream failed (${upstream.status}).`, detail: detail.slice(0, 500) },
         { status: 502 },
       );
     }
-
-    // The REST endpoint returns { audio: <base64>, warnings: [] }.
-    const result = (await upstream.json()) as { audio?: string };
-    if (!result.audio) {
-      return Response.json(
-        { error: "Upstream returned no audio." },
-        { status: 502 },
-      );
-    }
-
-    const bytes = Buffer.from(result.audio, "base64");
-    // Hand back a fresh ArrayBuffer-backed body the Response can stream.
-    return new Response(new Uint8Array(bytes), {
-      status: 200,
-      headers: {
-        "Content-Type": "audio/mpeg",
-        "Content-Length": String(bytes.byteLength),
-        "Cache-Control": "no-store",
-      },
-    });
+    const bytes = Buffer.from(await upstream.arrayBuffer());
+    return mp3Response(bytes);
   } catch (err) {
     return Response.json(
       { error: `Speech request errored: ${String(err)}` },
       { status: 500 },
     );
   }
+}
+
+// --- ElevenLabs (premium) -------------------------------------------------
+// Returns a 200 MP3 Response on success, or null on any failure so the caller
+// can fall back to OpenAI.
+async function synthesizeElevenLabs(
+  text: string,
+  voice: string | undefined,
+): Promise<Response | null> {
+  const apiKey = process.env.ELEVENLABS_API_KEY;
+  if (!apiKey) return null;
+  const voiceId = voice || ELEVENLABS_DEFAULT_VOICE;
+  try {
+    const upstream = await fetch(
+      `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}?output_format=mp3_44100_128`,
+      {
+        method: "POST",
+        headers: {
+          "xi-api-key": apiKey,
+          "Content-Type": "application/json",
+          Accept: "audio/mpeg",
+        },
+        body: JSON.stringify({ text, model_id: ELEVENLABS_MODEL }),
+      },
+    );
+    if (!upstream.ok) return null;
+    const bytes = Buffer.from(await upstream.arrayBuffer());
+    if (bytes.byteLength === 0) return null;
+    return mp3Response(bytes);
+  } catch {
+    return null;
+  }
+}
+
+function mp3Response(bytes: Buffer): Response {
+  return new Response(new Uint8Array(bytes), {
+    status: 200,
+    headers: {
+      "Content-Type": "audio/mpeg",
+      "Content-Length": String(bytes.byteLength),
+      "Cache-Control": "no-store",
+    },
+  });
 }
