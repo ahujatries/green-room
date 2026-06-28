@@ -1,3 +1,5 @@
+import { A_NEW_HOPE } from "./works/a-new-hope";
+
 // The sample work the demo ships with. Original, self-contained, deliberately
 // full of gaps — the gaps are the point. When the writer asks about something
 // the page hasn't decided, the character surfaces it instead of inventing canon.
@@ -247,13 +249,9 @@ export type Room = {
   cast: Character[];
 };
 
-/** The one-tap sample so the room is usable before you paste anything. */
-export const SAMPLE_ROOM: Room = {
-  script: {
-    title: SCRIPT.title,
-    format: SCRIPT.format,
-    logline: SCRIPT.logline,
-    text: SCRIPT.text,
-  },
-  cast: CHARACTERS,
-};
+/** The one-tap sample so the room is usable before you paste anything. The
+ *  default is "A New Hope" — a finished film with a full page behind it, so the
+ *  sample cast gives a first-time writer a lot back immediately. "The Last
+ *  Shift" (SCRIPT / CHARACTERS above) remains in the codebase as the
+ *  still-being-written counterpoint. */
+export const SAMPLE_ROOM: Room = A_NEW_HOPE;

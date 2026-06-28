@@ -165,10 +165,10 @@ export function AddScript({ onReady }: { onReady: (room: Room) => void }) {
             >
               <span>
                 <span className="block font-script text-[15px] font-bold text-bonelit">
-                  Try the sample — &ldquo;The Last Shift&rdquo;
+                  Try the sample — &ldquo;{SAMPLE_ROOM.script.title}&rdquo;
                 </span>
                 <span className="mt-0.5 block font-mono text-[8.5px] font-medium uppercase tracking-[0.12em] text-mist">
-                  a 2-hander to meet the room
+                  a finished film to meet the room
                 </span>
               </span>
               <span className="font-mono text-[9px] font-bold uppercase tracking-[0.13em] text-springpale">
