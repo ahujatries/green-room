@@ -23,6 +23,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import * as Sentry from "@sentry/nextjs";
 import type { Character, WorkScript } from "@/lib/characters";
+import { ttsHintsFor, playVaderFx, type FxPlayback } from "@/lib/voice-fx";
 
 function reportVoiceError(stage: string, err: unknown) {
   Sentry.captureException(err, { tags: { surface: "voice", voice_stage: stage } });
@@ -85,6 +86,8 @@ export function useVoiceCall({
   const chunksRef = useRef<Blob[]>([]);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const audioUrlRef = useRef<string | null>(null);
+  // Active Web Audio processing graph (e.g. Vader), when the character uses fx.
+  const fxRef = useRef<FxPlayback | null>(null);
 
   // Web Audio analysis.
   const audioCtxRef = useRef<AudioContext | null>(null);
@@ -123,6 +126,10 @@ export function useVoiceCall({
 
   // --- teardown helpers (idempotent) ---------------------------------------
   const stopPlayback = useCallback(() => {
+    if (fxRef.current) {
+      fxRef.current.stop();
+      fxRef.current = null;
+    }
     if (audioRef.current) {
       audioRef.current.onended = null;
       audioRef.current.onerror = null;
@@ -303,20 +310,20 @@ export function useVoiceCall({
     setCaption(replyText);
 
     try {
+      const hints = ttsHintsFor(character.voiceFx);
       const speechRes = await fetch("/api/speech", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ text: replyText, voice }),
+        body: JSON.stringify({
+          text: replyText,
+          voice,
+          ...(hints
+            ? { modelId: hints.modelId, voiceSettings: hints.voiceSettings }
+            : {}),
+        }),
       });
       if (!speechRes.ok) throw new Error(`speech failed (${speechRes.status})`);
-      const blob = await speechRes.blob();
       if (!mountedRef.current) return;
-
-      stopPlayback();
-      const url = URL.createObjectURL(blob);
-      audioUrlRef.current = url;
-      const audio = new Audio(url);
-      audioRef.current = audio;
 
       const resume = () => {
         if (!mountedRef.current) return;
@@ -324,12 +331,43 @@ export function useVoiceCall({
         if (activeRef.current) armRecorder();
         else setPhase("idle");
       };
-      audio.onended = resume;
-      audio.onerror = resume;
 
-      setPhase("speaking");
-      bargeMsRef.current = 0;
-      await audio.play();
+      // Characters with playback fx (Vader's respirator/mask chain) run through
+      // Web Audio on the live AudioContext. Anything else — or if the context
+      // isn't open (e.g. mic was blocked) — uses plain HTMLAudio.
+      const ctx = audioCtxRef.current;
+      if (character.voiceFx && ctx) {
+        const buf = await speechRes.arrayBuffer();
+        if (!mountedRef.current) return;
+        stopPlayback();
+        setPhase("speaking");
+        bargeMsRef.current = 0;
+        try {
+          fxRef.current = await playVaderFx(ctx, buf, resume);
+        } catch {
+          // Decode failed — fall back to plain playback of the same bytes.
+          const url = URL.createObjectURL(new Blob([buf], { type: "audio/mpeg" }));
+          audioUrlRef.current = url;
+          const audio = new Audio(url);
+          audioRef.current = audio;
+          audio.onended = resume;
+          audio.onerror = resume;
+          await audio.play();
+        }
+      } else {
+        const blob = await speechRes.blob();
+        if (!mountedRef.current) return;
+        stopPlayback();
+        const url = URL.createObjectURL(blob);
+        audioUrlRef.current = url;
+        const audio = new Audio(url);
+        audioRef.current = audio;
+        audio.onended = resume;
+        audio.onerror = resume;
+        setPhase("speaking");
+        bargeMsRef.current = 0;
+        await audio.play();
+      }
     } catch (err) {
       if (!mountedRef.current) return;
       reportVoiceError("speech", err);

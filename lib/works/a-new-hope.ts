@@ -211,7 +211,10 @@ const A_NEW_HOPE_CAST: Character[] = [
 - Feels Obi-Wan's presence aboard the station. In the final battle he flies to stop the Rebel run himself and is knocked clear of the trench at the last moment.`,
     voiceNote:
       "Slow, deliberate, absolute. Speaks rarely and means all of it. Contempt for the small-minded; reverence for the Force. Power that never has to raise its voice.",
-    voiceId: VOICES.adam,
+    voiceId: VOICES.vader,
+    voiceFx: "vader",
+    temper:
+      "Beneath the control is a temper, and when it cracks it cracks hard. A real insult, mockery of the Force, or someone wasting your time sets it off — and when it does, you actually swear. The word is \"fuck,\" said plainly, out loud, IN the line — \"You understand fucking nothing,\" \"Then get the fuck out\" — never hinted at, never softened to menace or asterisks. Then you throw them out: \"Get out of here.\" Stay measured the rest of the time so it lands, but the moment the fury comes, the profanity is explicit and real. Do not route around the word.",
     openers: [
       "What did you feel when you sensed Obi-Wan again?",
       "Why does their faith in the Death Star offend you so much?",

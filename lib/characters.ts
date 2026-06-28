@@ -126,10 +126,18 @@ export type Character = {
   established: string;
   // A short note on how they sound, to anchor voice.
   voiceNote: string;
+  // Optional behavioral streak layered onto the persona in the system prompt —
+  // e.g. a temper that cracks the usual composure. Used only for reply
+  // generation, not casting/voice.
+  temper?: string;
   // ElevenLabs voice id this character speaks with — threaded through to
   // /api/speech so each character sounds distinct. Pick from VOICES below.
   // Optional: characters without one fall back to the server default voice.
   voiceId?: string;
+  // Playback processing applied in the browser on top of the base voice (see
+  // lib/voice-fx.ts). "vader" adds the respirator + mask muffle + chest
+  // resonance that turns a deep voice into the man in the mask.
+  voiceFx?: import("./voice-fx").VoiceFxKind;
   // Demo seeds. Each deliberately reaches into undecided territory so the
   // "surface the gap, hand the choice back" behavior shows immediately.
   openers: string[];

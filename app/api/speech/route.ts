@@ -35,10 +35,21 @@ const OPENAI_DEFAULT_VOICE = process.env.SPEECH_VOICE ?? "alloy";
 export async function POST(req: NextRequest) {
   let text: string;
   let voice: string | undefined;
+  // Optional per-character overrides (e.g. Vader: a richer model + steadier
+  // prosody before the browser-side processing in lib/voice-fx.ts).
+  let modelId: string | undefined;
+  let voiceSettings: Record<string, unknown> | undefined;
   try {
-    const body = (await req.json()) as { text?: string; voice?: string };
+    const body = (await req.json()) as {
+      text?: string;
+      voice?: string;
+      modelId?: string;
+      voiceSettings?: Record<string, unknown>;
+    };
     text = (body.text ?? "").trim();
     voice = body.voice?.trim() || undefined;
+    modelId = body.modelId?.trim() || undefined;
+    voiceSettings = body.voiceSettings;
   } catch {
     return Response.json({ error: "Invalid JSON body." }, { status: 400 });
   }
@@ -54,7 +65,7 @@ export async function POST(req: NextRequest) {
   // fails AND an OpenAI key exists.
   if (hasEleven) {
     const premium = await isPremiumTier();
-    const result = await synthesizeElevenLabs(text, voice, premium);
+    const result = await synthesizeElevenLabs(text, voice, premium, modelId, voiceSettings);
     if (result) return result;
     if (!hasOpenAI) {
       return Response.json(
@@ -78,12 +89,17 @@ async function synthesizeElevenLabs(
   text: string,
   voice: string | undefined,
   premium: boolean,
+  modelOverride?: string,
+  voiceSettings?: Record<string, unknown>,
 ): Promise<Response | null> {
   const apiKey = process.env.ELEVENLABS_API_KEY;
   if (!apiKey) return null;
   const voiceId =
     voice || (premium ? ELEVENLABS_PREMIUM_VOICE : ELEVENLABS_DEFAULT_VOICE);
-  const modelId = premium ? ELEVENLABS_PREMIUM_MODEL : ELEVENLABS_MODEL;
+  // A per-character model override (e.g. Vader's multilingual_v2) wins over the
+  // tier default, so the chosen voice sounds right even for non-premium users.
+  const modelId =
+    modelOverride || (premium ? ELEVENLABS_PREMIUM_MODEL : ELEVENLABS_MODEL);
   try {
     const upstream = await fetch(
       `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}?output_format=mp3_44100_128`,
@@ -94,7 +110,11 @@ async function synthesizeElevenLabs(
           "Content-Type": "application/json",
           Accept: "audio/mpeg",
         },
-        body: JSON.stringify({ text, model_id: modelId }),
+        body: JSON.stringify({
+          text,
+          model_id: modelId,
+          ...(voiceSettings ? { voice_settings: voiceSettings } : {}),
+        }),
       },
     );
     if (!upstream.ok) return null;

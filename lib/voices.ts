@@ -12,5 +12,10 @@ export const VOICES = {
   daniel: "onwK4e9ZLuTAKqWW03F9", // British, steady, formal — Obi-Wan
   alice: "Xb7hH8MSUJpSbSDYk0k2", // British, clear, commanding female — Leia
   chris: "iP95p4xoKVk53GoZ742B", // charming, casual, wry male — Han
-  adam: "pNInz6obpgDQGcFmaJgB", // dominant, firm male — Vader
+  adam: "pNInz6obpgDQGcFmaJgB", // dominant, firm male
+  // Vader's base voice — a Voice-Design original ("Sith Lord (Green Room)"):
+  // deep, slow, mechanical. An original (not a Vader/James-Earl-Jones clone,
+  // which ElevenLabs blocks anyway) keeps a GTM product clear of voice-likeness
+  // claims. The respirator/mask/EQ chain in lib/voice-fx.ts turns it into Vader.
+  vader: "mbfHjYJ3fVAVuRloAfqu",
 } as const;
