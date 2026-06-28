@@ -6,9 +6,60 @@ import { DefaultChatTransport, type UIMessage } from "ai";
 import type { Character, WorkScript } from "@/lib/characters";
 import { ArrowRight, Restart, Stop } from "./icons";
 import { ArqoCta } from "./arqo-cta";
+import { shareMoment, type ShareResult } from "@/lib/share";
 
 function textOf(m: UIMessage): string {
   return m.parts.map((p) => (p.type === "text" ? p.text : "")).join("");
+}
+
+// A small "share this line" affordance under a character's reply. Sharing posts
+// a /s?... link (with the writer's referral code) → the viral loop back to Arqo.
+function ShareLine({
+  name,
+  role,
+  line,
+  initial,
+}: {
+  name: string;
+  role: string;
+  line: string;
+  initial: string;
+}) {
+  const [result, setResult] = useState<ShareResult | "sharing" | null>(null);
+
+  async function onShare() {
+    setResult("sharing");
+    const r = await shareMoment({ name, role, line, initial });
+    setResult(r);
+    if (r !== "failed") setTimeout(() => setResult(null), 2000);
+  }
+
+  const label =
+    result === "copied"
+      ? "link copied ✓"
+      : result === "shared"
+        ? "shared ✓"
+        : result === "failed"
+          ? "try again"
+          : result === "sharing"
+            ? "…"
+            : "share this line";
+
+  return (
+    <button
+      onClick={onShare}
+      disabled={result === "sharing"}
+      className="flex items-center gap-1.5 pl-1 font-mono text-[8px] font-bold uppercase tracking-[0.13em] text-mist transition-colors hover:text-springpale disabled:opacity-60"
+    >
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+        <circle cx="18" cy="5" r="3" />
+        <circle cx="6" cy="12" r="3" />
+        <circle cx="18" cy="19" r="3" />
+        <path d="M8.6 13.5l6.8 4M15.4 6.5l-6.8 4" />
+      </svg>
+      {label}
+    </button>
+  );
 }
 
 export function ChatView({
@@ -122,8 +173,18 @@ export function ChatView({
                   {textOf(m)}
                 </div>
               ) : (
-                <div className="max-w-[86%] whitespace-pre-wrap rounded-2xl rounded-bl-md border border-line bg-paper px-4 py-[15px] font-script text-[14.5px] leading-[1.62] text-ink">
-                  {textOf(m)}
+                <div className="flex max-w-[86%] flex-col items-start gap-1.5">
+                  <div className="whitespace-pre-wrap rounded-2xl rounded-bl-md border border-line bg-paper px-4 py-[15px] font-script text-[14.5px] leading-[1.62] text-ink">
+                    {textOf(m)}
+                  </div>
+                  {textOf(m).trim().length > 0 && !(busy && m.id === messages[messages.length - 1]?.id) ? (
+                    <ShareLine
+                      name={character.name}
+                      role={character.role}
+                      line={textOf(m)}
+                      initial={character.initial}
+                    />
+                  ) : null}
                 </div>
               )}
             </div>
