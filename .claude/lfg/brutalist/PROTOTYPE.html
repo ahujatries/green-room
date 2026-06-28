@@ -1,0 +1,681 @@
+
+"<!DOCTYPE html>
+<html><head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="eb843efb-136d-4be6-a323-7ab840230d86"></script>
+</head>
+<body>
+
+<x-dc>
+<helmet>
+<style>/* ======================================================================
+   Arqo Â· fonts.css â webfont declarations
+   ----------------------------------------------------------------------
+   Two bundled families ship as woff2 from assets/fonts:
+     Â· Geist Sans â wordmark (900), headings (700), UI (400-600)
+     Â· Geist Mono â metadata, stamps, buttons, kbd
+   One CDN family for screenplay rendering only:
+     Â· Courier Prime â the .arq screenplay surface (industry standard)
+   Retired faces (Inter, SÃ¶hne, Fraunces, JetBrains Mono) must NOT be
+   reintroduced. Geist Sans 700 is the heading face; the 900 wordmark
+   stays the heaviest type on any page.
+   ====================================================================== */
+
+/* Courier Prime â screenplay body only. Loaded from Google Fonts; the
+   in-app editor + PDF/Fountain/FDX exporters all render in this face. */
+/* latin-ext */
+@font-face {
+  font-family: 'Courier Prime';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url("4a8aa886-a9bd-470b-aafe-764c81662abe") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'Courier Prime';
+  font-style: italic;
+  font-weight: 400;
+  font-display: swap;
+  src: url("b57b5648-c811-4573-b2a8-4da5d007fbaa") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'Courier Prime';
+  font-style: italic;
+  font-weight: 700;
+  font-display: swap;
+  src: url("0508959c-86b0-432d-9bf7-75a733cd073b") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'Courier Prime';
+  font-style: italic;
+  font-weight: 700;
+  font-display: swap;
+  src: url("1f132de1-fa12-43ae-b270-c43e7d61fd01") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'Courier Prime';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("08eb1460-a115-44a4-9b90-9eaf4f8f42f2") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'Courier Prime';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("d14d5064-9cb7-4038-8e52-3a9468eda15e") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+/* latin-ext */
+@font-face {
+  font-family: 'Courier Prime';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("58b6977a-51f9-4ed6-a028-62b617e95d76") format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+/* latin */
+@font-face {
+  font-family: 'Courier Prime';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("a5030dd6-e76e-48ba-88d2-980e4c3825ea") format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+
+/* ââ Geist Sans âââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
+@font-face {
+  font-family: 'Geist';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("fb7475e8-8871-43be-b81a-9aedaadc5cc4") format('woff2');
+}
+@font-face {
+  font-family: 'Geist';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("9ae18df5-6031-4107-88ac-6757e4bcfcea") format('woff2');
+}
+@font-face {
+  font-family: 'Geist';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("64a6f29f-9be1-4a90-9a16-4e70458a166d") format('woff2');
+}
+@font-face {
+  font-family: 'Geist';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("d5dc4a93-4222-4a6e-b53f-544a0aef0a46") format('woff2');
+}
+@font-face {
+  font-family: 'Geist';
+  font-style: normal;
+  font-weight: 900;
+  font-display: swap;
+  src: url("8d1411d1-882a-4042-bdc8-45f683da9fe4") format('woff2');
+}
+
+/* ââ Geist Mono âââââââââââââââââââââââââââââââââââââââââââââââââââââââ */
+@font-face {
+  font-family: 'Geist Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("bd55546f-5c55-454e-9442-5aef890f4b15") format('woff2');
+}
+@font-face {
+  font-family: 'Geist Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("5a45cbfa-7269-4813-a75f-3921f188ba02") format('woff2');
+}
+@font-face {
+  font-family: 'Geist Mono';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("58b7cf00-5ee1-4c5d-8513-a19ee16636df") format('woff2');
+}
+</style>
+<style>
+  *{box-sizing:border-box;}
+  ::selection{background:rgba(217,157,46,.35);}
+  @keyframes blink{0%,49%{opacity:1;}50%,100%{opacity:0;}}
+  @keyframes rise{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);}}
+  @keyframes pop{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+  @keyframes wave{0%,100%{transform:scaleY(.28);}50%{transform:scaleY(1);}}
+  .gr-scroll::-webkit-scrollbar{width:0;height:0;}
+  .gr-scroll{-ms-overflow-style:none;scrollbar-width:none;}
+</style>
+<script src="a54a4dae-65f6-415c-a681-841db75f2e41"></script>
+</helmet>
+
+<div style="min-height:100vh; width:100%; background:#16280F; display:flex; align-items:center; justify-content:center; padding:24px; font-family:'Geist',sans-serif;">
+  <div style="width:420px; height:860px; background:#D7E8AE; border:2px solid #1A2418; box-shadow:10px 10px 0 0 #0B1607; overflow:hidden; display:flex; flex-direction:column; color:#1A2418; position:relative;">
+
+    <!-- clap stripe -->
+    <div style="height:10px; flex:none; background:repeating-linear-gradient(90deg,#14310C 0 13px,#A5E857 13px 26px); border-bottom:2px solid #1A2418;"></div>
+
+    <!-- ============ HEADER ============ -->
+    <sc-if value="{{ showBack }}" hint-placeholder-val="{{ false }}">
+      <div style="flex:none; display:flex; align-items:center; gap:11px; padding:11px 14px; border-bottom:2px solid #1A2418; background:#3F7A1C;">
+        <button onclick="{{ onBack }}" aria-label="Back" style="flex:none; width:32px; height:32px; display:flex; align-items:center; justify-content:center; background:#FBF8EE; border:2px solid #1A2418; cursor:pointer;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#1A2418" stroke-width="2.4" stroke-linecap="square"><path d="M15 5l-7 7 7 7"></path></svg></button>
+        <sc-if value="{{ isDetail }}" hint-placeholder-val="{{ false }}">
+          <span style="font-family:'Geist Mono',monospace; font-weight:700; font-size:9px; letter-spacing:.13em; text-transform:uppercase; color:#D7E8AE;">{{ backLabel }}</span>
+          <span style="flex:1;"></span>
+          <img src="24deefa2-b0b2-4ba2-b586-52be139c98a7" style="width:20px; height:20px;">
+        </sc-if>
+        <sc-if value="{{ isChat }}" hint-placeholder-val="{{ false }}">
+          <span style="min-width:0;">
+            <span style="display:block; font-family:'Geist Mono',monospace; font-weight:500; font-size:8px; letter-spacing:.13em; text-transform:uppercase; color:#A7BE86;">{{ curTitle }}</span>
+            <span style="display:block; margin-top:2px;"><span style="font-family:'Courier Prime',monospace; font-weight:700; font-size:13px; color:#F7F2E6;">{{ chName }}</span> <span style="font-family:'Geist Mono',monospace; font-weight:700; font-size:8px; letter-spacing:.1em; text-transform:uppercase; color:#A5E857;">Â· Chat</span></span>
+          </span>
+          <span style="flex:1;"></span>
+          <span style="font-family:'Geist Mono',monospace; font-weight:700; font-size:8px; letter-spacing:.1em; text-transform:uppercase; color:#D7E8AE; border:2px solid #A5E857; padding:5px 8px;">File {{ chFile }}</span>
+        </sc-if>
+      </div>
+    </sc-if>
+    <sc-if value="{{ showBrand }}" hint-placeholder-val="{{ true }}">
+      <div style="flex: none; display: flex; align-items: center; gap: 9px; padding: 13px 16px; border-bottom: 2px solid #1A2418; background-color: #275b08">
+        <span style="flex:none; position:relative; width:32px; height:32px; display:block;"><span style="position:absolute; inset:0; background:#C2EE82; clip-path:polygon(50% 2%,98% 26%,50% 50%,2% 26%);"></span><span style="position:absolute; inset:0; background:#3F7A1C; clip-path:polygon(2% 26%,50% 50%,50% 98%,2% 74%);"></span><span style="position:absolute; inset:0; background:#79B330; clip-path:polygon(50% 50%,98% 26%,98% 74%,50% 98%);"></span></span>
+        <span style="font-family:'Geist',sans-serif; font-weight:900; font-size:16px; letter-spacing:-.01em; text-transform:uppercase; white-space:nowrap; color:#F7F2E6;">The <span style="color: #a5e857">Green</span> Room</span>
+        <span style="flex:1;"></span>
+        <sc-if value="{{ isLibrary }}" hint-placeholder-val="{{ false }}">
+          <span style="display:flex; align-items:center; gap:8px;">
+            <span style="text-align:right;">
+              <span style="display:block; font-family:'Geist Mono',monospace; font-weight:700; font-size:7.5px; letter-spacing:.1em; text-transform:uppercase; color:#A5E857;">{{ acctLabel }}</span>
+              <span style="display:block; font-family:'Geist Mono',monospace; font-size:8px; color:#D7E8AE;">{{ acctName }}</span>
+            </span>
+            <span style="flex:none; width:30px; height:30px; border-radius:50%; background:#A5E857; color:#1A2418; display:flex; align-items:center; justify-content:center; font-family:'Courier Prime',monospace; font-weight:700; font-size:14px; border:2px solid #1A2418;">{{ acctInitial }}</span>
+          </span>
+        </sc-if>
+        <sc-if value="{{ showArqoLockup }}" hint-placeholder-val="{{ true }}">
+          <span style="display:flex; align-items:center; gap:8px; white-space:nowrap;"><span style="font-family:'Geist Mono',monospace; font-weight:700; font-size:9px; letter-spacing:.16em; text-transform:uppercase; color:#A5E857;">By</span><img src="24deefa2-b0b2-4ba2-b586-52be139c98a7" style="width:21px; height:21px; display:block;"><span style="font-family:'Geist',sans-serif; font-weight:900; font-size:19px; letter-spacing:-.04em; color:#F7F2E6;">arqo</span></span>
+        </sc-if>
+      </div>
+    </sc-if>
+
+    <!-- ============ ENTRY (Option C) ============ -->
+    <sc-if value="{{ isEntry }}" hint-placeholder-val="{{ true }}">
+      <div class="gr-scroll" style="flex:1; overflow:hidden; padding:22px 20px; display:flex; flex-direction:column; animation:rise .3s cubic-bezier(.22,.61,.36,1) both;">
+        <div style="font-family:'Geist Mono',monospace; font-weight:700; font-size:9px; letter-spacing:.2em; text-transform:uppercase; color:#3F7A1C;">Tonightâs call sheet</div>
+        <h1 style="margin:11px 0 0; font-family:'Geist',sans-serif; font-weight:900; font-size:25px; line-height:1.05; letter-spacing:-.02em; text-transform:uppercase;">Start with a scene already on its feet.</h1>
+        <div style="margin-top:18px; border:2px solid #1A2418; box-shadow:4px 4px 0 0 #1A2418; background:#FBF8EE;">
+          <div style="position:relative; height:124px; border-bottom:2px solid #1A2418; overflow:hidden; display:flex; align-items:flex-end;">
+            <image-slot id="cover-lastShift" shape="rect" placeholder="Drop a key still" style="position:absolute; inset:0; width:100%; height:100%;"></image-slot>
+            <span style="position:absolute; top:10px; left:12px; z-index:2; background:#A5E857; border:2px solid #1A2418; padding:4px 8px; font-family:'Geist Mono',monospace; font-weight:700; font-size:8px; letter-spacing:.12em; text-transform:uppercase;">Talk now Â· no account</span>
+            <span style="position:absolute; top:9px; right:12px; z-index:2; background:rgba(11,22,7,.5); padding:3px 6px; font-family:'Geist Mono',monospace; font-weight:500; font-size:7.5px; letter-spacing:.14em; text-transform:uppercase; color:#D7E8AE;">Casting â sample</span>
+            <span style="position:relative; z-index:2; pointer-events:none; width:100%; padding:24px 14px 11px; background:linear-gradient(transparent, rgba(11,22,7,.9)); font-family:'Courier Prime',monospace; font-weight:700; font-size:26px; line-height:1; color:#F7F2E6; white-space:nowrap;">The Last Shift</span>
+          </div>
+          <div style="padding:14px;">
+            <div style="font-family:'Geist Mono',monospace; font-weight:500; font-size:8.5px; letter-spacing:.13em; text-transform:uppercase; color:#5A6450;">12 pp Â· 2 characters Â· short film</div>
+            <p style="margin:10px 0 0; font-family:'Courier Prime',monospace; font-size:13px; line-height:1.5; color:#1A2418;">âYou know my name. You said it when you came in. I never told you.â</p>
+            <button onclick="{{ onMeetCast }}" style="margin-top:14px; display:flex; align-items:center; justify-content:center; gap:8px; width:100%; padding:13px; background:#A5E857; color:#1A2418; border:2px solid #1A2418; box-shadow:3px 3px 0 0 #1A2418; cursor:pointer; transition:transform .12s,box-shadow .12s; font-family:'Geist Mono',monospace; font-weight:700; font-size:10px; letter-spacing:.12em; text-transform:uppercase;" style-hover="transform:translate(-2px,-2px); box-shadow:5px 5px 0 0 #1A2418;">Meet the cast â</button>
+          </div>
+        </div>
+        <span style="flex:1;"></span>
+        <div style="margin-top:18px; border:2px solid #1A2418; background:#16280F; padding:16px;">
+          <div style="font-family:'Geist Mono',monospace; font-weight:700; font-size:8px; letter-spacing:.16em; text-transform:uppercase; color:#A5E857;">Your own scripts?</div>
+          <p style="margin:8px 0 13px; font-family:'Geist',sans-serif; font-size:12.5px; line-height:1.5; color:#C9CDBC;">Sign in with Arqo to talk to <em>your</em> cast â or make a free account to browse the Library.</p>
+          <button onclick="{{ onConsent }}" style="display:flex; align-items:center; justify-content:center; gap:8px; width:100%; padding:13px; background:#A5E857; color:#1A2418; border:2px solid #1A2418; cursor:pointer; transition:opacity .12s; font-family:'Geist Mono',monospace; font-weight:700; font-size:10px; letter-spacing:.12em; text-transform:uppercase;" style-hover="opacity:.9;">
+            <img src="6c5e04f9-2300-4495-88cb-18fa97c9c482" style="width:15px; height:15px;"> Sign in with Arqo
+          </button>
+          <button onclick="{{ onCreateFree }}" style="margin-top:9px; width:100%; padding:11px; background:transparent; color:#F7F2E6; border:2px solid rgba(247,242,230,.3); cursor:pointer; transition:border-color .12s; font-family:'Geist Mono',monospace; font-weight:700; font-size:9.5px; letter-spacing:.12em; text-transform:uppercase;" style-hover="border-color:#A5E857;">Create a free account</button>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- ============ CONSENT ============ -->
+    <sc-if value="{{ isConsent }}" hint-placeholder-val="{{ false }}">
+      <div class="gr-scroll" style="flex:1; overflow:hidden; padding:24px 20px; display:flex; flex-direction:column; animation:rise .3s cubic-bezier(.22,.61,.36,1) both;">
+        <div style="font-family:'Geist Mono',monospace; font-weight:700; font-size:9px; letter-spacing:.2em; text-transform:uppercase; color:#3F7A1C;">Connect Â· Arqo ID</div>
+        <div style="margin-top:18px; display:flex; align-items:center; justify-content:center; gap:14px;">
+          <span style="position:relative; width:54px; height:54px; display:flex; align-items:center; justify-content:center; background:#FBF8EE; border:2px solid #1A2418; box-shadow:3px 3px 0 0 #1A2418;"><span style="position:relative; width:30px; height:30px; display:block;"><span style="position:absolute; inset:0; background:#C2EE82; clip-path:polygon(50% 2%,98% 26%,50% 50%,2% 26%);"></span><span style="position:absolute; inset:0; background:#3F7A1C; clip-path:polygon(2% 26%,50% 50%,50% 98%,2% 74%);"></span><span style="position:absolute; inset:0; background:#79B330; clip-path:polygon(50% 50%,98% 26%,98% 74%,50% 98%);"></span></span></span>
+          <span style="display:flex; gap:5px;"><span style="width:6px; height:6px; background:#A5E857; border:1px solid #1A2418;"></span><span style="width:6px; height:6px; background:#A5E857; border:1px solid #1A2418;"></span><span style="width:6px; height:6px; background:#A5E857; border:1px solid #1A2418;"></span></span>
+          <span style="width:54px; height:54px; display:flex; align-items:center; justify-content:center; background:#1E3A12; border:2px solid #1A2418; box-shadow:3px 3px 0 0 #1A2418;"><img src="24deefa2-b0b2-4ba2-b586-52be139c98a7" style="width:27px; height:27px;"></span>
+        </div>
+        <h1 style="margin:20px 0 0; font-family:'Geist',sans-serif; font-weight:900; font-size:24px; line-height:1.08; letter-spacing:-.02em; text-transform:uppercase; text-align:center;">Green Room wants to connect to your Arqo&nbsp;ID</h1>
+        <div style="margin-top:18px; display:flex; align-items:center; gap:11px; padding:11px 13px; background:#FBF8EE; border:2px solid #1A2418;">
+          <span style="flex:none; width:38px; height:38px; border-radius:50%; background:#3F7A1C; color:#F3EEE3; display:flex; align-items:center; justify-content:center; font-family:'Courier Prime',monospace; font-weight:700; font-size:18px;">I</span>
+          <span style="min-width:0;">
+            <span style="display:block; font-family:'Geist',sans-serif; font-weight:700; font-size:14px;">Isabella Vizetta</span>
+            <span style="display:block; font-family:'Geist Mono',monospace; font-size:9.5px; color:#5A6450;">isabella@tryarqo.com</span>
+          </span>
+          <span style="flex:1;"></span>
+          <span style="font-family:'Geist Mono',monospace; font-weight:700; font-size:8px; letter-spacing:.1em; text-transform:uppercase; color:#3F7A1C;">Switch</span>
+        </div>
+        <div style="margin-top:16px; font-family:'Geist Mono',monospace; font-weight:700; font-size:8.5px; letter-spacing:.16em; text-transform:uppercase; color:#5A6450;">Green Room will be able to</div>
+        <div style="margin-top:11px; display:flex; flex-direction:column; gap:11px;">
+          <div style="display:flex; gap:11px; align-items:flex-start;">
+            <span style="flex:none; width:20px; height:20px; background:#A5E857; border:2px solid #1A2418; display:flex; align-items:center; justify-content:center;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#1A2418" stroke-width="3.2" stroke-linecap="square"><path d="M5 12l4 5 10-11"></path></svg></span>
+            <span style="font-family:'Geist',sans-serif; font-size:13px; line-height:1.4;">Read your scripts, characters, and pages</span>
+          </div>
+          <div style="display:flex; gap:11px; align-items:flex-start;">
+            <span style="flex:none; width:20px; height:20px; background:#A5E857; border:2px solid #1A2418; display:flex; align-items:center; justify-content:center;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#1A2418" stroke-width="3.2" stroke-linecap="square"><path d="M5 12l4 5 10-11"></path></svg></span>
+            <span style="font-family:'Geist',sans-serif; font-size:13px; line-height:1.4;">See your name and profile photo</span>
+          </div>
+          <div style="display:flex; gap:11px; align-items:flex-start;">
+            <span style="flex:none; width:20px; height:20px; background:#FBF8EE; border:2px solid #1A2418; display:flex; align-items:center; justify-content:center;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#B95236" stroke-width="3" stroke-linecap="square"><path d="M6 6l12 12M18 6L6 18"></path></svg></span>
+            <span style="font-family:'Geist',sans-serif; font-size:13px; line-height:1.4; color:#5A6450;">Never writes to your account Â· never trains on your work</span>
+          </div>
+        </div>
+        <span style="flex:1;"></span>
+        <button onclick="{{ onAuthorize }}" style="display:flex; align-items:center; justify-content:center; gap:9px; width:100%; padding:15px; background:#A5E857; color:#1A2418; border:2px solid #1A2418; box-shadow:4px 4px 0 0 #1A2418; cursor:pointer; transition:transform .12s,box-shadow .12s; font-family:'Geist Mono',monospace; font-weight:700; font-size:11px; letter-spacing:.12em; text-transform:uppercase;" style-hover="transform:translate(-2px,-2px); box-shadow:6px 6px 0 0 #1A2418;">Authorize Green Room</button>
+        <button onclick="{{ onBack }}" style="margin-top:10px; width:100%; padding:12px; background:transparent; border:2px solid #1A2418; cursor:pointer; font-family:'Geist Mono',monospace; font-weight:700; font-size:10px; letter-spacing:.12em; text-transform:uppercase;">Not now</button>
+        <p style="margin:14px 0 0; font-family:'Geist Mono',monospace; font-size:8.5px; line-height:1.5; letter-spacing:.04em; color:#8B8576; text-align:center;">Revoke anytime in Arqo â Settings â Connected apps</p>
+      </div>
+    </sc-if>
+
+    <!-- ============ LIBRARY ============ -->
+    <sc-if value="{{ isLibrary }}" hint-placeholder-val="{{ false }}">
+      <div style="flex:none; padding:14px 16px; border-bottom:2px solid #1A2418; display:flex; align-items:center; gap:9px; background:#FBF8EE;">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#5A6450" stroke-width="2.2" stroke-linecap="square"><circle cx="11" cy="11" r="7"></circle><path d="M21 21l-4-4"></path></svg>
+        <span style="font-family:'Geist Mono',monospace; font-weight:500; font-size:10px; letter-spacing:.1em; text-transform:uppercase; color:#8B8576;">Search scripts &amp; characters</span>
+      </div>
+      <div class="gr-scroll" style="flex:1; overflow-y:auto; padding:18px 16px 22px; animation:rise .3s cubic-bezier(.22,.61,.36,1) both;">
+        <div style="font-family:'Geist Mono',monospace; font-weight:700; font-size:9px; letter-spacing:.2em; text-transform:uppercase; color:#3F7A1C;">Featured Â· talk now</div>
+        <div onclick="{{ onOpenSample }}" style="margin-top:11px; border:2px solid #1A2418; box-shadow:4px 4px 0 0 #1A2418; background:#FBF8EE; cursor:pointer; transition:transform .12s,box-shadow .12s;" style-hover="transform:translate(-2px,-2px); box-shadow:6px 6px 0 0 #1A2418;">
+          <div style="position:relative; height:96px; border-bottom:2px solid #1A2418; overflow:hidden; display:flex; align-items:flex-end;">
+            <image-slot id="cover-lastShift" shape="rect" placeholder="Drop a key still" style="position:absolute; inset:0; width:100%; height:100%;"></image-slot>
+            <span style="position:absolute; top:9px; right:10px; z-index:2; background:#A5E857; border:2px solid #1A2418; padding:3px 7px; font-family:'Geist Mono',monospace; font-weight:700; font-size:7.5px; letter-spacing:.1em; text-transform:uppercase;">No account</span>
+            <span style="position:relative; z-index:2; pointer-events:none; width:100%; padding:18px 12px 10px; background:linear-gradient(transparent, rgba(11,22,7,.9)); font-family:'Courier Prime',monospace; font-weight:700; font-size:21px; line-height:1; color:#F7F2E6; white-space:nowrap;">The Last Shift</span>
+          </div>
+          <div style="padding:12px 13px;">
+            <div style="font-family:'Geist Mono',monospace; font-weight:500; font-size:8px; letter-spacing:.12em; text-transform:uppercase; color:#5A6450;">Arqo original Â· 12 pp Â· 2 characters</div>
+            <p style="margin:8px 0 0; font-family:'Geist',sans-serif; font-size:12px; line-height:1.45; color:#1C2117;">At 2:47 AM, the last customer knows the closing waitressâs name â and wonât say why.</p>
+          </div>
+        </div>
+        <div style="margin:18px 0 11px; display:flex; align-items:center; gap:10px;">
+          <span style="font-family:'Geist Mono',monospace; font-weight:700; font-size:9px; letter-spacing:.2em; text-transform:uppercase; color:#3F7A1C;">Public domain</span>
+          <span style="height:2px; flex:1; background:rgba(26,36,24,.15);"></span>
+          <span style="font-family:'Geist Mono',monospace; font-weight:500; font-size:8px; letter-spacing:.1em; text-transform:uppercase; color:#8B8576;">{{ acctLabel }}</span>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:10px;">
+          <sc-for list="{{ catalog }}" as="item" hint-placeholder-count="3">
+            <div onclick="{{ item.onOpen }}" style="display:flex; align-items:center; gap:12px; padding:11px 12px; background:#FBF8EE; border:2px solid #1A2418; box-shadow:3px 3px 0 0 #1A2418; cursor:pointer; transition:transform .12s,box-shadow .12s;" style-hover="transform:translate(-2px,-2px); box-shadow:5px 5px 0 0 #1A2418;">
+              <image-slot id="{{ item.cover }}" shape="rect" placeholder="still" style="flex:none; width:52px; height:52px; border:2px solid #1A2418;"></image-slot>
+              <span style="min-width:0; flex:1;">
+                <span style="display:block; font-family:'Courier Prime',monospace; font-weight:700; font-size:13.5px; line-height:1.1;">{{ item.title }}</span>
+                <span style="display:block; margin-top:3px; font-family:'Geist Mono',monospace; font-size:8px; letter-spacing:.08em; text-transform:uppercase; color:#5A6450;">{{ item.tag }}</span>
+              </span>
+              <span style="font-family:'Geist Mono',monospace; font-size:14px; color:#1A2418;">â</span>
+            </div>
+          </sc-for>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- ============ DETAIL ============ -->
+    <sc-if value="{{ isDetail }}" hint-placeholder-val="{{ false }}">
+      <div class="gr-scroll" style="flex:1; overflow-y:auto; padding:20px 18px 22px; animation:rise .3s cubic-bezier(.22,.61,.36,1) both;">
+        <div style="position:relative; height:140px; border:2px solid #1A2418; box-shadow:4px 4px 0 0 #1A2418; overflow:hidden; margin-bottom:18px;">
+          <image-slot id="{{ curCover }}" shape="rect" placeholder="Drop a key still" style="position:absolute; inset:0; width:100%; height:100%;"></image-slot>
+          <span style="position:absolute; top:9px; left:11px; z-index:2; background:rgba(11,22,7,.55); padding:3px 7px; font-family:'Geist Mono',monospace; font-weight:700; font-size:7px; letter-spacing:.13em; text-transform:uppercase; color:#D7E8AE;">Key art</span>
+        </div>
+        <div style="font-family:'Geist Mono',monospace; font-weight:700; font-size:9px; letter-spacing:.2em; text-transform:uppercase; color:#3F7A1C;">{{ curEyebrow }}</div>
+        <h1 style="margin:8px 0 0; font-family:'Courier Prime',monospace; font-weight:700; font-size:30px; line-height:1.02; color:#1A2418;">{{ curTitle }}</h1>
+        <div style="margin-top:10px; font-family:'Geist Mono',monospace; font-weight:500; font-size:9px; letter-spacing:.12em; text-transform:uppercase; color:#5A6450;">{{ curMeta }}</div>
+        <p style="margin:11px 0 0; font-family:'Geist',sans-serif; font-size:13.5px; line-height:1.55; color:#1C2117;">{{ curLogline }}</p>
+        <div style="margin:20px 0 12px; display:flex; align-items:center; gap:10px;">
+          <span style="font-family:'Geist Mono',monospace; font-weight:700; font-size:9px; letter-spacing:.2em; text-transform:uppercase; color:#3F7A1C;">The cast</span>
+          <span style="height:2px; flex:1; background:rgba(26,36,24,.15);"></span>
+          <span style="font-family:'Geist Mono',monospace; font-weight:500; font-size:8px; letter-spacing:.08em; text-transform:uppercase; color:#8B8576;">pick how you meet them</span>
+        </div>
+        <div style="display:flex; flex-direction:column; gap:13px;">
+          <sc-for list="{{ cast }}" as="c" hint-placeholder-count="2">
+            <div style="border:2px solid #1A2418; box-shadow:4px 4px 0 0 #1A2418; background:#FBF8EE;">
+              <div style="position:relative; height:128px; border-bottom:2px solid #1A2418; overflow:hidden;">
+                <image-slot id="{{ c.photoId }}" shape="rect" placeholder="{{ c.photoHint }}" style="position:absolute; inset:0; width:100%; height:100%;"></image-slot>
+                <span style="position:absolute; top:8px; left:12px; z-index:2; background:rgba(11,22,7,.55); padding:3px 7px; font-family:'Geist Mono',monospace; font-weight:700; font-size:7px; letter-spacing:.13em; text-transform:uppercase; color:#D7E8AE;">Casting â {{ c.name }}</span>
+                <div style="position:absolute; left:0; right:0; bottom:0; z-index:2; pointer-events:none; padding:24px 14px 11px; background:linear-gradient(transparent, rgba(11,22,7,.92));">
+                  <span style="display:block; font-family:'Courier Prime',monospace; font-weight:700; font-size:21px; color:#F7F2E6;">{{ c.name }}</span>
+                  <span style="display:block; margin-top:3px; font-family:'Geist Mono',monospace; font-weight:700; font-size:7.5px; letter-spacing:.12em; text-transform:uppercase; color:#A5E857;">{{ c.roleShort }}</span>
+                </div>
+              </div>
+              <div style="padding:12px 13px;">
+                <p style="margin:0 0 11px; font-family:'Geist',sans-serif; font-size:12px; line-height:1.45; color:#1C2117;">{{ c.blurb }}</p>
+                <div style="display:flex; gap:8px;">
+                  <button onclick="{{ c.onChat }}" style="flex:1; display:flex; flex-direction:column; align-items:center; gap:6px; padding:9px 4px; background:#A5E857; border:2px solid #1A2418; cursor:pointer; transition:transform .12s,box-shadow .12s;" style-hover="transform:translate(-1px,-1px); box-shadow:3px 3px 0 0 #1A2418;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#1A2418" stroke-width="2" stroke-linecap="square"><path d="M4 5h16v11H9l-4 4v-4H4z"></path></svg><span style="font-family:'Geist Mono',monospace; font-weight:700; font-size:8px; letter-spacing:.08em; text-transform:uppercase; color:#1A2418;">Chat</span></button>
+                  <button onclick="{{ c.onCall }}" style="flex:1; display:flex; flex-direction:column; align-items:center; gap:6px; padding:9px 4px; background:#F7F2E6; border:2px solid #1A2418; cursor:pointer; transition:transform .12s,box-shadow .12s;" style-hover="transform:translate(-1px,-1px); box-shadow:3px 3px 0 0 #1A2418;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#3F7A1C" stroke-width="1.9" stroke-linecap="square"><path d="M5 4h4l2 5-3 2a11 11 0 0 0 5 5l2-3 5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"></path></svg><span style="font-family:'Geist Mono',monospace; font-weight:700; font-size:8px; letter-spacing:.08em; text-transform:uppercase;">Call</span></button>
+                  <button onclick="{{ c.onVideo }}" style="flex:1; display:flex; flex-direction:column; align-items:center; gap:6px; padding:9px 4px; background:#F7F2E6; border:2px solid #1A2418; cursor:pointer; transition:transform .12s,box-shadow .12s;" style-hover="transform:translate(-1px,-1px); box-shadow:3px 3px 0 0 #1A2418;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="#3F7A1C" stroke-width="1.9" stroke-linecap="square"><rect x="3" y="6" width="12" height="12"></rect><path d="M15 10l6-3v10l-6-3z"></path></svg><span style="font-family:'Geist Mono',monospace; font-weight:700; font-size:8px; letter-spacing:.08em; text-transform:uppercase;">Video</span></button>
+                </div>
+              </div>
+            </div>
+          </sc-for>
+        </div>
+        <p style="margin:20px 0 0; padding-top:14px; border-top:2px solid rgba(26,36,24,.18); font-family:'Geist',sans-serif; font-size:11.5px; line-height:1.55; color:#5A6450;">They only know what the page knows. Ask past it and theyâll tell you itâs still yours to decide.</p>
+      </div>
+    </sc-if>
+
+    <!-- ============ CHAT ============ -->
+    <sc-if value="{{ isChat }}" hint-placeholder-val="{{ false }}">
+      <div style="flex:none; display:flex; align-items:center; gap:8px; padding:8px 14px; border-bottom:2px solid #1A2418; background:#FBF8EE;">
+        <span style="width:7px; height:7px; border-radius:50%; background:#A5E857; border:1px solid #1A2418;"></span>
+        <span style="font-family:'Geist Mono',monospace; font-weight:500; font-size:8px; letter-spacing:.14em; text-transform:uppercase; color:#5A6450;">Chat Â· live</span>
+        <span style="flex:1;"></span>
+        <button onclick="{{ onRestart }}" aria-label="Restart" style="display:flex; align-items:center; gap:5px; background:transparent; border:none; cursor:pointer; font-family:'Geist Mono',monospace; font-weight:700; font-size:8px; letter-spacing:.12em; text-transform:uppercase; color:#5A6450;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#5A6450" stroke-width="2" stroke-linecap="square"><path d="M3 12a9 9 0 1 0 3-6.7M3 4v4h4"></path></svg> Restart</button>
+      </div>
+      <div class="gr-scroll" ref="{{ transcriptRef }}" style="flex:1; overflow-y:auto; padding:16px 14px; display:flex; flex-direction:column; gap:13px;">
+        <sc-if value="{{ chatEmpty }}" hint-placeholder-val="{{ true }}">
+          <div style="display:flex; flex-direction:column; gap:11px; padding:4px 2px;">
+            <div style="font-family:'Courier Prime',monospace; font-weight:700; font-size:19px; line-height:1.3; color:#1A2418;">Youâre alone with {{ chName }}.</div>
+            <div style="font-family:'Geist',sans-serif; font-size:13px; line-height:1.55; color:#3A483F;">They only know what the page knows. Start where the scene leaves off â or push past it, and watch what they refuse to invent.</div>
+            <div style="margin-top:4px; font-family:'Geist Mono',monospace; font-weight:700; font-size:9px; letter-spacing:.18em; color:#3F7A1C;">TRY</div>
+            <sc-for list="{{ openers }}" as="op" hint-placeholder-count="3">
+              <button onclick="{{ op.onClick }}" style="text-align:left; background:#FBF8EE; border:2px solid #1A2418; box-shadow:2px 2px 0 0 #1A2418; padding:10px 13px; cursor:pointer; font-family:'Geist',sans-serif; font-size:13px; color:#1A2418; transition:transform .12s,box-shadow .12s;" style-hover="transform:translate(-2px,-2px); box-shadow:4px 4px 0 0 #1A2418;">{{ op.q }}</button>
+            </sc-for>
+          </div>
+        </sc-if>
+        <sc-for list="{{ messages }}" as="m" hint-placeholder-count="0">
+          <sc-if value="{{ m.isUser }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex; justify-content:flex-end; animation:pop .26s cubic-bezier(.22,.61,.36,1) both;">
+              <div style="max-width:80%; background:#1A2418; color:#F3EEE3; border:2px solid #1A2418; padding:11px 13px; font-family:'Geist',sans-serif; font-size:13.5px; line-height:1.45;">{{ m.text }}</div>
+            </div>
+          </sc-if>
+          <sc-if value="{{ m.isChar }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex; flex-direction:column; align-items:flex-start; gap:7px; animation:pop .26s cubic-bezier(.22,.61,.36,1) both;">
+              <sc-if value="{{ m.gap }}" hint-placeholder-val="{{ false }}">
+                <span style="display:inline-flex; align-items:center; gap:6px; background:#16280F; border:2px solid #1A2418; padding:4px 8px; font-family:'Geist Mono',monospace; font-weight:700; font-size:7.5px; letter-spacing:.13em; text-transform:uppercase; color:#A5E857;"><span style="width:5px; height:5px; background:#A5E857;"></span> Still unwritten</span>
+              </sc-if>
+              <div style="max-width:90%; background:#FBF8EE; border:2px solid #1A2418; box-shadow:3px 3px 0 0 #1A2418; padding:13px 14px; font-family:'Courier Prime',monospace; font-size:13px; line-height:1.6; color:#1A2418;">{{ m.text }}</div>
+            </div>
+          </sc-if>
+        </sc-for>
+      </div>
+      <div style="flex:none; display:flex; align-items:center; gap:9px; padding:12px 13px; border-top:2px solid #1A2418; background:#FBF8EE;">
+        <input value="{{ input }}" oninput="{{ onInput }}" onkeydown="{{ onKeyDown }}" placeholder="Ask {{ chName }} somethingâ¦" style="flex:1; padding:12px 13px; background:#F7F2E6; border:2px solid #1A2418; font-family:'Geist',sans-serif; font-size:13px; color:#1A2418; outline:none;">
+        <button onclick="{{ onSend }}" aria-label="Send" style="flex:none; width:46px; height:46px; display:flex; align-items:center; justify-content:center; background:#3F7A1C; border:2px solid #1A2418; box-shadow:3px 3px 0 0 #1A2418; cursor:pointer;"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="#F3EEE3" stroke-width="2.2" stroke-linecap="square"><path d="M5 12h14M13 6l6 6-6 6"></path></svg></button>
+      </div>
+    </sc-if>
+
+    <!-- ============ CALL (voice) ============ -->
+    <sc-if value="{{ isCall }}" hint-placeholder-val="{{ false }}">
+      <div style="flex:1; background:#16280F; color:#F7F2E6; display:flex; flex-direction:column; padding:20px; animation:rise .3s cubic-bezier(.22,.61,.36,1) both;">
+        <div style="display:flex; align-items:center; gap:10px;">
+          <button onclick="{{ onEnd }}" aria-label="Back" style="flex:none; width:32px; height:32px; display:flex; align-items:center; justify-content:center; background:transparent; border:2px solid rgba(247,242,230,.3); cursor:pointer;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#F7F2E6" stroke-width="2.4" stroke-linecap="square"><path d="M15 5l-7 7 7 7"></path></svg></button>
+          <span style="font-family:'Geist Mono',monospace; font-weight:500; font-size:8px; letter-spacing:.13em; text-transform:uppercase; color:#A7BE86;">{{ curTitle }}</span>
+          <span style="flex:1;"></span>
+          <span style="display:inline-flex; align-items:center; gap:6px; font-family:'Geist Mono',monospace; font-weight:700; font-size:8px; letter-spacing:.14em; text-transform:uppercase; color:#A5E857;"><span style="width:6px; height:6px; border-radius:50%; background:#A5E857; animation:blink 1.2s steps(1) infinite;"></span> Voice Â· live</span>
+        </div>
+        <div style="flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:16px;">
+          <div style="position:relative; width:150px; height:150px; border-radius:50%; overflow:hidden; border:3px solid #A5E857; box-shadow:0 0 0 8px rgba(165,232,87,.12);">
+            <image-slot id="{{ chPhotoId }}" shape="circle" placeholder="{{ chHint }}" style="width:100%; height:100%;"></image-slot>
+          </div>
+          <div style="text-align:center;">
+            <div style="font-family:'Courier Prime',monospace; font-weight:700; font-size:27px; line-height:1; color:#F7F2E6;">{{ chName }}</div>
+            <div style="margin-top:6px; font-family:'Geist Mono',monospace; font-weight:700; font-size:8.5px; letter-spacing:.14em; text-transform:uppercase; color:#A5E857;">{{ chRole }}</div>
+          </div>
+          <div style="display:flex; align-items:center; gap:4px; height:30px;">
+            <span style="width:4px; height:100%; background:#A5E857; transform-origin:center; animation:wave .9s ease-in-out infinite; animation-delay:0s;"></span>
+            <span style="width:4px; height:100%; background:#A5E857; transform-origin:center; animation:wave .9s ease-in-out infinite; animation-delay:.1s;"></span>
+            <span style="width:4px; height:100%; background:#A5E857; transform-origin:center; animation:wave .9s ease-in-out infinite; animation-delay:.2s;"></span>
+            <span style="width:4px; height:100%; background:#A5E857; transform-origin:center; animation:wave .9s ease-in-out infinite; animation-delay:.3s;"></span>
+            <span style="width:4px; height:100%; background:#A5E857; transform-origin:center; animation:wave .9s ease-in-out infinite; animation-delay:.4s;"></span>
+            <span style="width:4px; height:100%; background:#A5E857; transform-origin:center; animation:wave .9s ease-in-out infinite; animation-delay:.5s;"></span>
+            <span style="width:4px; height:100%; background:#A5E857; transform-origin:center; animation:wave .9s ease-in-out infinite; animation-delay:.4s;"></span>
+            <span style="width:4px; height:100%; background:#A5E857; transform-origin:center; animation:wave .9s ease-in-out infinite; animation-delay:.3s;"></span>
+            <span style="width:4px; height:100%; background:#A5E857; transform-origin:center; animation:wave .9s ease-in-out infinite; animation-delay:.2s;"></span>
+            <span style="width:4px; height:100%; background:#A5E857; transform-origin:center; animation:wave .9s ease-in-out infinite; animation-delay:.1s;"></span>
+            <span style="width:4px; height:100%; background:#A5E857; transform-origin:center; animation:wave .9s ease-in-out infinite; animation-delay:0s;"></span>
+          </div>
+          <div style="font-family:'Geist Mono',monospace; font-weight:500; font-size:11px; letter-spacing:.1em; color:#8FA383;">{{ callTime }}</div>
+        </div>
+        <div style="border-left:2px solid #A5E857; padding:8px 0 8px 12px; margin-bottom:16px;">
+          <div style="font-family:'Geist Mono',monospace; font-weight:700; font-size:7px; letter-spacing:.16em; text-transform:uppercase; color:#A7BE86; margin-bottom:4px;">{{ chName }} Â· from the page</div>
+          <div style="font-family:'Courier Prime',monospace; font-size:13px; line-height:1.55; color:#EFE9DB;">{{ chLine }}</div>
+        </div>
+        <div style="display:flex; align-items:center; justify-content:center; gap:20px;">
+          <button onclick="{{ onMute }}" aria-label="Mute" style="width:50px; height:50px; border-radius:50%; border:2px solid rgba(247,242,230,.3); background:transparent; color:#F7F2E6; display:flex; align-items:center; justify-content:center; cursor:pointer;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square"><rect x="9" y="3" width="6" height="11" rx="3"></rect><path d="M6 11a6 6 0 0 0 12 0M12 17v4"></path></svg></button>
+          <button onclick="{{ onEnd }}" aria-label="End" style="width:62px; height:62px; border-radius:50%; border:2px solid #1A2418; background:#B95236; color:#F7F2E6; box-shadow:4px 4px 0 0 #1A2418; display:flex; align-items:center; justify-content:center; cursor:pointer;"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#F7F2E6" stroke-width="2" stroke-linecap="square"><path d="M3 9c5-4 13-4 18 0l-2.5 3-3.5-1v-2a11 11 0 0 0-6 0v2L5.5 12z"></path></svg></button>
+          <button onclick="{{ onSpk }}" aria-label="Speaker" style="width:50px; height:50px; border-radius:50%; border:2px solid rgba(247,242,230,.3); background:transparent; color:#F7F2E6; display:flex; align-items:center; justify-content:center; cursor:pointer;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square"><path d="M4 9v6h4l5 4V5L8 9z"></path><path d="M16 9a4 4 0 0 1 0 6"></path></svg></button>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- ============ VIDEO ============ -->
+    <sc-if value="{{ isVideo }}" hint-placeholder-val="{{ false }}">
+      <div style="flex:1; position:relative; background:#0B1607; display:flex; flex-direction:column; overflow:hidden; animation:rise .3s cubic-bezier(.22,.61,.36,1) both;">
+        <image-slot id="{{ chPhotoId }}" shape="rect" placeholder="{{ chHint }}" style="position:absolute; inset:0; width:100%; height:100%;"></image-slot>
+        <div style="position:relative; z-index:2; display:flex; align-items:center; gap:10px; padding:16px 16px 24px; background:linear-gradient(rgba(11,22,7,.85), transparent);">
+          <button onclick="{{ onEnd }}" aria-label="Back" style="flex:none; width:32px; height:32px; display:flex; align-items:center; justify-content:center; background:rgba(11,22,7,.5); border:2px solid rgba(247,242,230,.4); cursor:pointer;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#F7F2E6" stroke-width="2.4" stroke-linecap="square"><path d="M15 5l-7 7 7 7"></path></svg></button>
+          <span style="min-width:0;">
+            <span style="display:block; font-family:'Courier Prime',monospace; font-weight:700; font-size:16px; color:#F7F2E6;">{{ chName }}</span>
+            <span style="display:block; font-family:'Geist Mono',monospace; font-weight:500; font-size:7.5px; letter-spacing:.13em; text-transform:uppercase; color:#A7BE86;">{{ curTitle }}</span>
+          </span>
+          <span style="flex:1;"></span>
+          <span style="display:inline-flex; align-items:center; gap:6px; background:rgba(11,22,7,.5); padding:5px 8px; font-family:'Geist Mono',monospace; font-weight:700; font-size:8px; letter-spacing:.13em; text-transform:uppercase; color:#A5E857;"><span style="width:6px; height:6px; border-radius:50%; background:#A5E857; animation:blink 1.2s steps(1) infinite;"></span> {{ callTime }}</span>
+        </div>
+        <span style="flex:1;"></span>
+        <div style="position:absolute; right:14px; bottom:150px; z-index:3; width:84px; height:112px; border:2px solid #A5E857; background:#16280F; overflow:hidden;">
+          <image-slot id="self-pip" shape="rect" placeholder="You" style="position:absolute; inset:0; width:100%; height:100%;"></image-slot>
+          <span style="position:absolute; bottom:4px; left:5px; z-index:2; font-family:'Geist Mono',monospace; font-weight:700; font-size:7px; letter-spacing:.1em; text-transform:uppercase; color:#D7E8AE;">You</span>
+        </div>
+        <div style="position:relative; z-index:2; margin:0 16px 14px; padding:10px 12px; background:rgba(11,22,7,.72); border-left:2px solid #A5E857;">
+          <div style="font-family:'Geist Mono',monospace; font-weight:700; font-size:7px; letter-spacing:.16em; text-transform:uppercase; color:#A7BE86; margin-bottom:4px;">{{ chName }} Â· from the page</div>
+          <div style="font-family:'Courier Prime',monospace; font-size:13px; line-height:1.5; color:#F7F2E6;">{{ chLine }}</div>
+        </div>
+        <div style="position:relative; z-index:2; display:flex; align-items:center; justify-content:center; gap:16px; padding:14px 16px 18px; background:linear-gradient(transparent, rgba(11,22,7,.9));">
+          <button onclick="{{ onMute }}" aria-label="Mute" style="width:46px; height:46px; border-radius:50%; border:2px solid rgba(247,242,230,.4); background:rgba(11,22,7,.4); color:#F7F2E6; display:flex; align-items:center; justify-content:center; cursor:pointer;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square"><rect x="9" y="3" width="6" height="11" rx="3"></rect><path d="M6 11a6 6 0 0 0 12 0M12 17v4"></path></svg></button>
+          <button onclick="{{ onEnd }}" aria-label="End" style="width:58px; height:58px; border-radius:50%; border:2px solid #1A2418; background:#B95236; color:#F7F2E6; box-shadow:4px 4px 0 0 #1A2418; display:flex; align-items:center; justify-content:center; cursor:pointer;"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#F7F2E6" stroke-width="2" stroke-linecap="square"><path d="M3 9c5-4 13-4 18 0l-2.5 3-3.5-1v-2a11 11 0 0 0-6 0v2L5.5 12z"></path></svg></button>
+          <button onclick="{{ onCam }}" aria-label="Flip camera" style="width:46px; height:46px; border-radius:50%; border:2px solid rgba(247,242,230,.4); background:rgba(11,22,7,.4); color:#F7F2E6; display:flex; align-items:center; justify-content:center; cursor:pointer;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="square"><path d="M3 7h4l2-2h6l2 2h4v12H3z"></path><circle cx="12" cy="13" r="3"></circle></svg></button>
+        </div>
+      </div>
+    </sc-if>
+
+    <!-- ============ TOAST ============ -->
+    <sc-if value="{{ toast }}" hint-placeholder-val="{{ false }}">
+      <div style="position:absolute; left:16px; right:16px; bottom:18px; z-index:50; background:#16280F; border:2px solid #A5E857; box-shadow:4px 4px 0 0 #0B1607; padding:12px 14px; display:flex; align-items:center; gap:10px; animation:pop .24s cubic-bezier(.22,.61,.36,1) both;">
+        <span style="flex:none; width:8px; height:8px; background:#A5E857;"></span>
+        <span style="font-family:'Geist Mono',monospace; font-weight:500; font-size:10px; line-height:1.4; letter-spacing:.04em; color:#D7E8AE;">{{ toast }}</span>
+      </div>
+    </sc-if>
+
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script="" data-props="{&quot;$preview&quot;:{&quot;width&quot;:468,&quot;height&quot;:908}}">
+class Component extends DCLogic {
+  state = {
+    screen: 'entry', scriptId: null, charId: null, account: 'none',
+    history: [], messages: [], input: '', toast: null, gi: 0,
+    callT0: 0, tick: 0,
+  };
+
+  scripts = {
+    lastShift: { title: 'The Last Shift', eyebrow: 'The work Â· sample', meta: '12 pp Â· 2 characters Â· short film', logline: "At 2:47 AM, the last customer in a roadside diner knows the closing waitress's name â and won't say why.", cast: ['nadia', 'august'] },
+    hamlet:    { title: 'Hamlet', eyebrow: 'Public domain Â· tragedy', meta: 'c. 1600 Â· William Shakespeare', logline: "A prince, a ghost, and a kingdom that asks him to be certain before he is ready.", cast: ['hamlet', 'ophelia'] },
+    dolls:     { title: "A Doll's House", eyebrow: 'Public domain Â· drama', meta: '1879 Â· Henrik Ibsen', logline: "A wife discovers the cost of the role she has been cast in â and what it takes to leave it.", cast: ['nora'] },
+    earnest:   { title: 'The Importance of Being Earnest', eyebrow: 'Public domain Â· comedy', meta: '1895 Â· Oscar Wilde', logline: "Two men, two false names, and a handbag that holds the whole truth.", cast: ['jack'] },
+    cyrano:    { title: 'Cyrano de Bergerac', eyebrow: 'Public domain Â· romance', meta: '1897 Â· Edmond Rostand', logline: "A peerless wit lends his words to a handsomer man, then watches the woman he loves fall for his own lines.", cast: ['cyrano'] },
+    pygmalion: { title: 'Pygmalion', eyebrow: 'Public domain Â· comedy', meta: '1913 Â· George Bernard Shaw', logline: "A professor bets he can pass a flower girl off as a duchess on the strength of her vowels alone.", cast: ['eliza', 'higgins'] },
+    caligari:  { title: 'The Cabinet of Dr. Caligari', eyebrow: 'Public domain Â· horror', meta: '1920 Â· Mayer & Janowitz', logline: "A carnival hypnotist and the sleepwalker he commands move through a town as the murders begin.", cast: ['cesare'] },
+    nosferatu: { title: 'Nosferatu', eyebrow: 'Public domain Â· horror', meta: '1922 Â· Henrik Galeen', logline: "A shadow buys the house across the way, and brings the plague of his hunger with him.", cast: ['orlok'] },
+  };
+
+  chars = {
+    nadia:   { name: 'Nadia', initial: 'N', roleShort: 'Waitress, 34', file: '2/4', blurb: 'Closing the Mirador alone. Sharp, guarded, answers questions with questions.',
+      openers: [ { q: 'Why did you really leave?', gap: true }, { q: "What's in that envelope?", gap: false }, { q: 'Do you trust August?', gap: false } ],
+      grounded: [ "I didn't open it. He slid it halfway and I left it there â still his to hand over, or mine to refuse.", "We close when the coffee's gone. Tonight he's the coffee." ],
+      defer: "That's not on the page yet. I won't make it up for you â that part's still yours to decide." },
+    august:  { name: 'August', initial: 'A', roleShort: 'Last customer, 61', file: '1/4', blurb: "Nurses a coffee he won't drink. Knows more than he'll say. Carries a sealed envelope.",
+      openers: [ { q: 'Why tonight, of all nights?', gap: true }, { q: "What's in the envelope?", gap: false }, { q: 'How do you know Nadia?', gap: false } ],
+      grounded: [ "I ordered it black. I haven't touched it. Some things you carry just to have somewhere to put your hands.", "The third booth by the window was mine. Not the way the others had it." ],
+      defer: "You haven't written that down yet. Decide it first â then ask me again." },
+    hamlet:  { name: 'Hamlet', initial: 'H', roleShort: 'Prince of Denmark', file: '1/4', blurb: 'Grief-sharp and circling. Speaks past you, to the room.',
+      openers: [ { q: 'How does it end for you?', gap: true }, { q: 'Do you believe the ghost?', gap: false }, { q: 'What of Ophelia?', gap: false } ],
+      grounded: [ "The ghost wore my father's shape and spoke his grief. That much the night gave me; the rest I must prove.", "I am bound to Denmark and to a question I cannot yet answer." ],
+      defer: "The page hasn't settled that. I'll not invent my own resolve â write it, and I'll mean it." },
+    ophelia: { name: 'Ophelia', initial: 'O', roleShort: "Polonius's daughter", file: '1/4', blurb: 'Watchful, dutiful, holding more than she says.',
+      openers: [ { q: 'Do you love Hamlet?', gap: true }, { q: 'What does your father ask of you?', gap: false }, { q: 'Are you afraid?', gap: false } ],
+      grounded: [ "I return his letters because I am told to. What I keep of him is not on paper.", "My father counsels caution. I listen, as a daughter listens." ],
+      defer: "That is not written for me yet. I won't decide my own heart ahead of you." },
+    nora:    { name: 'Nora', initial: 'N', roleShort: "Torvald's wife", file: '1/4', blurb: 'Bright on the surface, accounting in private.',
+      openers: [ { q: 'Would you ever leave?', gap: true }, { q: 'What did you do to save Torvald?', gap: false }, { q: 'Are you happy here?', gap: false } ],
+      grounded: [ "I borrowed what we needed and called it a gift, so his pride could stay intact.", "I dance, I spend, I play the part the house was built for." ],
+      defer: "You haven't written my leaving yet. I won't walk out the door before you decide I do." },
+    jack:    { name: 'Jack', initial: 'J', roleShort: 'Ernest in town', file: '1/4', blurb: 'Earnest by name, evasive by habit.',
+      openers: [ { q: 'Who are you, really?', gap: true }, { q: "What's in the handbag?", gap: false }, { q: 'Do you love Gwendolen?', gap: false } ],
+      grounded: [ "In town I am Ernest; in the country, Jack. It has been a convenient arrangement.", "I was found in a handbag at Victoria Station â the Brighton line." ],
+      defer: "Wilde hasn't given me that answer yet, and I shan't invent one to fill the pause." },
+    cyrano:  { name: 'Cyrano', initial: 'C', roleShort: 'Poet & swordsman', file: '1/4', blurb: 'Dazzling with words, certain of everything but his own face.',
+      openers: [ { q: 'Do you love Roxane?', gap: true }, { q: 'Why write for Christian?', gap: false }, { q: 'What of your nose?', gap: false } ],
+      grounded: [ "I lend Christian my words because hers deserve the best, and he has the face to carry them.", "My sword and my pen keep the same hours â both are how I refuse to be owed anything." ],
+      defer: "Rostand hasn't let me say it plainly yet. I won't confess ahead of the page." },
+    eliza:   { name: 'Eliza Doolittle', initial: 'E', roleShort: 'Flower girl', file: '1/4', blurb: 'A Covent Garden voice the professor means to remake.',
+      openers: [ { q: 'Will you stay with Higgins?', gap: true }, { q: 'Why learn to speak properly?', gap: false }, { q: 'What do you sell?', gap: false } ],
+      grounded: [ "I sell flowers, not myself. I came to be taught, and I paid my way to the door.", "He says my vowels will change my life. We'll see whose life changes." ],
+      defer: "Shaw hasn't decided that for me yet. I'll not promise my future to fill your curiosity." },
+    higgins: { name: 'Henry Higgins', initial: 'H', roleShort: 'Phonetics professor', file: '1/4', blurb: "Hears a person's whole history in their vowels. Tactless with the rest.",
+      openers: [ { q: 'Do you care for Eliza?', gap: true }, { q: 'What can a voice tell you?', gap: false }, { q: 'Why the experiment?', gap: false } ],
+      grounded: [ "Give me a sentence and I'll place you within six miles â in London, within two streets.", "I took her on as a problem in phonetics. The science is sound; the rest is noise." ],
+      defer: "That sentiment isn't on Shaw's page for me. I won't manufacture a feeling to satisfy you." },
+    cesare:  { name: 'Cesare', initial: 'C', roleShort: 'The somnambulist', file: '1/4', blurb: 'Sleeps in a cabinet, wakes only to be told what to do.',
+      openers: [ { q: 'Do you choose your acts?', gap: true }, { q: 'How long have you slept?', gap: false }, { q: 'Who is Caligari to you?', gap: false } ],
+      grounded: [ "I have slept as long as the doctor says I have. The cabinet is dark, and time does not visit it.", "When I am woken, I am pointed. I go where the hand points." ],
+      defer: "The film hasn't given me a will of my own yet. I cannot invent one for you in the dark." },
+    orlok:   { name: 'Count Orlok', initial: 'O', roleShort: 'The shadow', file: '1/4', blurb: 'Arrives like weather. Wants the house, and the one who lives in it.',
+      openers: [ { q: 'What do you truly want?', gap: true }, { q: 'Why leave the mountains?', gap: false }, { q: 'Do you sleep?', gap: false } ],
+      grounded: [ "I have purchased the house across from yours. Deeds outlast men; I have time for both.", "Night is long where I am from. I keep its hours wherever I go." ],
+      defer: "Galeen has not written my hunger's end. I will not name it before the page does." },
+  };
+
+  go(screen, patch) {
+    this.setState((s) => ({ history: [...s.history, { screen: s.screen, scriptId: s.scriptId, charId: s.charId }], screen, ...(patch || {}) }));
+  }
+  back() {
+    this.stopTimer();
+    this.setState((s) => {
+      const h = [...s.history];
+      const prev = h.pop();
+      if (!prev) return { screen: 'entry', history: [] };
+      return { history: h, screen: prev.screen, scriptId: prev.scriptId, charId: prev.charId };
+    });
+  }
+  openChat(id) {
+    this.setState((s) => ({ history: [...s.history, { screen: s.screen, scriptId: s.scriptId, charId: s.charId }], screen: 'chat', charId: id, messages: [], input: '', gi: 0 }));
+  }
+  openCall(id) { this.go('call', { charId: id }); this.startTimer(); }
+  openVideo(id) { this.go('video', { charId: id }); this.startTimer(); }
+  startTimer() {
+    this.stopTimer();
+    const t0 = Date.now();
+    this.setState({ callT0: t0, tick: t0 });
+    this._timer = setInterval(() => this.setState({ tick: Date.now() }), 1000);
+  }
+  stopTimer() { if (this._timer) { clearInterval(this._timer); this._timer = null; } }
+  componentWillUnmount() { this.stopTimer(); }
+  showToast(msg) {
+    this.setState({ toast: msg });
+    clearTimeout(this._t);
+    this._t = setTimeout(() => this.setState({ toast: null }), 2400);
+  }
+  pushMessage(text, gap) {
+    const t = (text == null ? this.state.input : text).trim();
+    if (!t) return;
+    const ch = this.chars[this.state.charId];
+    const isGap = gap != null ? gap : /\b(really|secret|future|the rest|next|happen|will you|how does it end|do you love|happy|afraid|avenge|leave|who are you)\b/i.test(t);
+    const reply = isGap ? ch.defer : ch.grounded[this.state.gi % ch.grounded.length];
+    this.setState((s) => ({ messages: [...s.messages, { role: 'user', text: t }, { role: 'char', text: reply, gap: isGap }], input: '', gi: isGap ? s.gi : s.gi + 1 }));
+    requestAnimationFrame(() => { const el = this._scroll; if (el) el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' }); });
+  }
+
+  renderVals() {
+    const s = this.state;
+    const script = s.scriptId ? this.scripts[s.scriptId] : null;
+    const ch = s.charId ? this.chars[s.charId] : null;
+    const screen = s.screen;
+
+    const cast = script ? script.cast.map((id) => {
+      const c = this.chars[id];
+      return { name: c.name, initial: c.initial, roleShort: c.roleShort, blurb: c.blurb,
+        photoId: 'cast-' + id, photoHint: 'Drop a still of ' + c.name,
+        onChat: () => this.openChat(id),
+        onCall: () => this.openCall(id),
+        onVideo: () => this.openVideo(id) };
+    }) : [];
+
+    const catOrder = ['hamlet', 'dolls', 'earnest', 'cyrano', 'pygmalion', 'caligari', 'nosferatu'];
+    const catalog = catOrder.map((id) => {
+      const sc = this.scripts[id];
+      return { title: sc.title, initial: sc.title.charAt(sc.title.startsWith('The ') || sc.title.startsWith('A ') ? (sc.title.startsWith('A ') ? 2 : 4) : 0).toUpperCase(),
+        tag: sc.meta.split(' Â· ').slice(-1)[0] + ' Â· ' + sc.cast.length + ' char.',
+        cover: 'cover-' + id,
+        onOpen: () => this.go('detail', { scriptId: id }) };
+    });
+
+    const messages = s.messages.map((m) => ({ ...m, isUser: m.role === 'user', isChar: m.role === 'char' }));
+    const openers = ch ? ch.openers.map((o) => ({ q: o.q, onClick: () => this.pushMessage(o.q, o.gap) })) : [];
+
+    const acctMap = {
+      none: { label: 'Guest', name: 'no account', initial: 'Â·' },
+      free: { label: 'Free account', name: 'reader', initial: '+' },
+      arqo: { label: 'Signed in', name: 'Isabella', initial: 'I' },
+    };
+    const acct = acctMap[s.account] || acctMap.none;
+
+    const secs = s.callT0 ? Math.max(0, Math.floor((s.tick - s.callT0) / 1000)) : 0;
+    const callTime = String(Math.floor(secs / 60)).padStart(2, '0') + ':' + String(secs % 60).padStart(2, '0');
+
+    return {
+      isEntry: screen === 'entry', isConsent: screen === 'consent', isLibrary: screen === 'library',
+      isDetail: screen === 'detail', isChat: screen === 'chat',
+      isCall: screen === 'call', isVideo: screen === 'video',
+      showBack: screen === 'detail' || screen === 'chat',
+      showBrand: screen === 'entry' || screen === 'consent' || screen === 'library',
+      showArqoLockup: screen === 'entry' || screen === 'consent',
+      backLabel: s.account === 'none' ? 'The Green Room' : 'The Library',
+      curTitle: script ? script.title : '', curEyebrow: script ? script.eyebrow : '',
+      curMeta: script ? script.meta : '', curLogline: script ? script.logline : '',
+      cast, catalog, messages, openers,
+      chName: ch ? ch.name : '', chFile: ch ? ch.file : '0/0',
+      chRole: ch ? ch.roleShort : '', chPhotoId: ch ? 'cast-' + s.charId : '', chHint: ch ? 'Drop a still of ' + ch.name : 'Drop a still',
+      chLine: ch ? ch.grounded[0] : '', callTime,
+      curCover: s.scriptId ? 'cover-' + s.scriptId : '',
+      onEnd: () => this.back(),
+      onMute: () => this.showToast('Mic muted'),
+      onSpk: () => this.showToast('Speaker on'),
+      onCam: () => this.showToast('Camera flipped'),
+      onCaps: () => this.showToast('Captions on'),
+      chatEmpty: s.messages.length === 0,
+      input: s.input, toast: s.toast,
+      acctLabel: acct.label, acctName: acct.name, acctInitial: acct.initial,
+      onMeetCast: () => this.go('detail', { scriptId: 'lastShift' }),
+      onConsent: () => this.go('consent'),
+      onCreateFree: () => this.go('library', { account: 'free' }),
+      onAuthorize: () => this.go('library', { account: 'arqo' }),
+      onOpenSample: () => this.go('detail', { scriptId: 'lastShift' }),
+      onBack: () => this.back(),
+      onRestart: () => this.setState({ messages: [], gi: 0 }),
+      onSend: () => this.pushMessage(),
+      onInput: (e) => this.setState({ input: e.target.value }),
+      onKeyDown: (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); this.pushMessage(); } },
+      transcriptRef: (el) => { this._scroll = el; },
+    };
+  }
+}
+</script>
+
+
+</body></html>"
+  
