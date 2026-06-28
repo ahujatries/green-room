@@ -23,7 +23,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import * as Sentry from "@sentry/nextjs";
 import type { Character, WorkScript } from "@/lib/characters";
-import { ttsHintsFor, playVaderFx, type FxPlayback } from "@/lib/voice-fx";
+import { ttsHintsFor, playVaderFx, playPlain, type FxPlayback } from "@/lib/voice-fx";
 
 function reportVoiceError(stage: string, err: unknown) {
   Sentry.captureException(err, { tags: { surface: "voice", voice_stage: stage } });
@@ -153,6 +153,36 @@ export function useVoiceCall({
       void audioCtxRef.current.close().catch(() => {});
       audioCtxRef.current = null;
     }
+  }, []);
+
+  // Create (or reuse) the playback/analysis AudioContext and unlock it. MUST be
+  // called inside a user gesture (start()): Safari only lets audio play later if
+  // the context was created/resumed during a click, and a one-sample silent tick
+  // marks output as user-initiated. Returns the live context, or null if the
+  // browser has no AudioContext at all.
+  const ensureAudioContext = useCallback((): AudioContext | null => {
+    let ctx = audioCtxRef.current;
+    if (!ctx) {
+      type WindowWithWebkit = Window & {
+        webkitAudioContext?: typeof AudioContext;
+      };
+      const Ctx =
+        window.AudioContext ?? (window as WindowWithWebkit).webkitAudioContext;
+      if (!Ctx) return null;
+      ctx = new Ctx();
+      audioCtxRef.current = ctx;
+      try {
+        const silent = ctx.createBuffer(1, 1, ctx.sampleRate);
+        const tick = ctx.createBufferSource();
+        tick.buffer = silent;
+        tick.connect(ctx.destination);
+        tick.start(0);
+      } catch {
+        /* priming is best-effort */
+      }
+    }
+    if (ctx.state === "suspended") void ctx.resume().catch(() => {});
+    return ctx;
   }, []);
 
   const stopStream = useCallback(() => {
@@ -299,42 +329,38 @@ export function useVoiceCall({
           else setPhase("idle");
         };
 
-        // Characters with playback fx (Vader's respirator/mask chain) run through
-        // Web Audio on the live AudioContext. Anything else — or if the context
-        // isn't open (e.g. mic was blocked) — uses plain HTMLAudio.
+        // All playback runs through Web Audio on the live AudioContext — the fx
+        // chain for Vader, a straight buffer source for everyone else. Web Audio
+        // is what actually sounds on Safari (HTMLAudio.play() this far past the
+        // click is blocked by autoplay policy). HTMLAudio stays only as a
+        // last-resort fallback if there's no context or the decode fails.
+        const buf = await speechRes.arrayBuffer();
+        if (!mountedRef.current) return;
+        stopPlayback();
+        setPhase("speaking");
+        bargeMsRef.current = 0;
+
         const ctx = audioCtxRef.current;
-        if (character.voiceFx && ctx) {
-          const buf = await speechRes.arrayBuffer();
-          if (!mountedRef.current) return;
-          stopPlayback();
-          setPhase("speaking");
-          bargeMsRef.current = 0;
+        if (ctx) {
+          if (ctx.state === "suspended") await ctx.resume().catch(() => {});
           try {
-            fxRef.current = await playVaderFx(ctx, buf, resume);
+            fxRef.current = character.voiceFx
+              ? await playVaderFx(ctx, buf, resume)
+              : await playPlain(ctx, buf, resume);
+            return;
           } catch {
-            // Decode failed — fall back to plain playback of the same bytes.
-            const url = URL.createObjectURL(new Blob([buf], { type: "audio/mpeg" }));
-            audioUrlRef.current = url;
-            const audio = new Audio(url);
-            audioRef.current = audio;
-            audio.onended = resume;
-            audio.onerror = resume;
-            await audio.play();
+            // Decode failed — fall through to HTMLAudio on the same bytes.
           }
-        } else {
-          const blob = await speechRes.blob();
-          if (!mountedRef.current) return;
-          stopPlayback();
-          const url = URL.createObjectURL(blob);
-          audioUrlRef.current = url;
-          const audio = new Audio(url);
-          audioRef.current = audio;
-          audio.onended = resume;
-          audio.onerror = resume;
-          setPhase("speaking");
-          bargeMsRef.current = 0;
-          await audio.play();
         }
+
+        if (!mountedRef.current) return;
+        const url = URL.createObjectURL(new Blob([buf], { type: "audio/mpeg" }));
+        audioUrlRef.current = url;
+        const audio = new Audio(url);
+        audioRef.current = audio;
+        audio.onended = resume;
+        audio.onerror = resume;
+        await audio.play();
       } catch (err) {
         if (!mountedRef.current) return;
         reportVoiceError("speech", err);
@@ -479,14 +505,17 @@ export function useVoiceCall({
       }
       mediaStreamRef.current = stream;
 
-      type WindowWithWebkit = Window & { webkitAudioContext?: typeof AudioContext };
-      const Ctx =
-        window.AudioContext ?? (window as WindowWithWebkit).webkitAudioContext;
-      const ctx = new Ctx();
-      audioCtxRef.current = ctx;
-      // The mic await above can drop us out of the user gesture, leaving the
-      // context suspended (so no analysis frames). Resume it explicitly.
-      if (ctx.state === "suspended") await ctx.resume().catch(() => {});
+      // Reuse the context unlocked in start() (the mic await above has already
+      // dropped us out of the gesture, so a context created here would never
+      // unlock on Safari). ensureAudioContext also re-resumes it if suspended.
+      const ctx = ensureAudioContext();
+      if (!ctx) {
+        setCaption("This browser can't play audio.");
+        setPhase("idle");
+        activeRef.current = false;
+        stopStream();
+        return;
+      }
       const source = ctx.createMediaStreamSource(stream);
       const analyser = ctx.createAnalyser();
       analyser.fftSize = 1024;
@@ -509,7 +538,7 @@ export function useVoiceCall({
       stopStream();
       reportVoiceError("mic", err);
     }
-  }, [runVadLoop, armRecorder, greet, stopStream, setPhase]);
+  }, [runVadLoop, armRecorder, greet, stopStream, setPhase, ensureAudioContext]);
 
   // -------------------------------------------------------------------------
   // Public actions
@@ -517,8 +546,11 @@ export function useVoiceCall({
   const start = useCallback(() => {
     if (statusRef.current !== "idle") return;
     activeRef.current = true;
+    // Unlock audio output NOW, inside the click — before openMicAndListen's
+    // getUserMedia await ends the gesture. Without this, Safari plays nothing.
+    ensureAudioContext();
     void openMicAndListen();
-  }, [openMicAndListen]);
+  }, [openMicAndListen, ensureAudioContext]);
 
   const end = useCallback(() => {
     activeRef.current = false;

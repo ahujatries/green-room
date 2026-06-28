@@ -23,6 +23,26 @@ export const maxDuration = 30;
 
 type ChatTurn = { role: "user" | "assistant"; content: string };
 
+const escapeRegex = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+// Belt-and-braces for the "## You are being spoken aloud" rule: models still
+// sometimes open with a screenplay speaker label ("VADER:", "Obi-Wan —") which
+// TTS would read out as the character announcing their own name. Strip a leading
+// label that matches the character's name (full, or its first/last token)
+// followed by a separator. Requiring the separator keeps real dialogue that just
+// happens to start with the name ("Luke, listen to me") untouched.
+function stripSpeakerLabel(text: string, name: string): string {
+  const parts = name.trim().split(/\s+/);
+  const candidates = new Set([name.trim(), parts[0], parts[parts.length - 1]]);
+  const alt = [...candidates]
+    .filter(Boolean)
+    .sort((a, b) => b.length - a.length)
+    .map(escapeRegex)
+    .join("|");
+  if (!alt) return text;
+  return text.replace(new RegExp(`^\\s*(?:${alt})\\s*[:：\\-—–]+\\s*`, "i"), "");
+}
+
 // Layered on top of the shared grounding prompt. The base prompt already asks
 // for tight, spoken replies; this hardens it for true voice output where stage
 // directions, asterisks, and markdown would be read aloud literally.
@@ -30,6 +50,7 @@ const SPOKEN_STYLE = `## You are being spoken aloud right now
 Your reply will be turned into audio and played back. Therefore:
 - Keep it to 2-4 sentences. This is talking, not writing.
 - No stage directions, no parentheticals, no asterisks, no markdown, no emoji, no narration of actions. Only the words you would actually say out loud.
+- Do NOT prefix your line with your own name or a speaker label (no "Vader:", no "OBI-WAN —"). This is a phone call, not a script page — just say the words.
 - Sound like natural speech: contractions, plain punctuation. Never describe your tone — just use it.`;
 
 // The call-pickup opener, produced once when a call connects (greeting: true).
@@ -105,7 +126,7 @@ export async function POST(req: Request) {
       headers: { "x-title": "Arqo · The Green Room (voice)" },
     });
 
-    return Response.json({ text: text.trim() });
+    return Response.json({ text: stripSpeakerLabel(text.trim(), character.name) });
   } catch (err) {
     return Response.json(
       { error: `Reply generation failed: ${String(err)}` },
