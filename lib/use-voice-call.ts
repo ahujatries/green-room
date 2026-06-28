@@ -3,25 +3,22 @@
 // useVoiceCall — the client-side state machine behind both Voice Call and Video
 // Call modes in The Green Room.
 //
-// This is an OpenAI-voice-style *continuous* loop, not push-to-talk. Once the
-// call starts the mic stays open and the hook listens for you to talk, detects
-// when you've stopped (voice-activity detection), transcribes that turn, gets
-// the character's reply, speaks it, and then automatically goes back to
-// listening — hands-free, round after round.
+// OpenAI-advanced-voice-style: once the call starts the mic stays open for the
+// whole call and never mutes. You just talk; a natural pause (~1.1s) ends your
+// turn, the character replies and speaks, then it's listening again. You can
+// also cut in WHILE the character is speaking — sustained speech barges in,
+// stops their playback, and starts your turn. The only control is End call.
 //
-//   start() ─▶ listening ─(you speak)─▶ (you go quiet ~1.1s) ─▶ thinking
-//                  ▲                                                │
-//                  │                                          (reply text)
-//                  │                                                ▼
-//                  └────────(playback ends)──── speaking ◀──────────┘
+//   start() ─▶ listening ─(you pause)─▶ thinking ─▶ speaking ─(ends)─▶ listening
+//                  ▲                                    │
+//                  └──────────(you barge in)───────────┘
 //
-// While the character is speaking the mic is gated off so it can't transcribe
-// its own voice. `toggleMic()` pauses / resumes the whole loop (a real mute).
-// `level` (0..1) is the live input loudness — drive an orb / waveform off it.
-// `sendText(line)` injects a typed turn straight into the reply+speech path.
+// Barge-in relies on the browser's echo cancellation so the character's own
+// voice (through the speakers) doesn't trip the mic — we also require sustained,
+// louder input before yielding, so leakage can't false-trigger it.
 //
 // Browser APIs only: getUserMedia, MediaRecorder, AudioContext/AnalyserNode,
-// HTMLAudioElement. No global state, no external deps beyond Sentry reporting.
+// HTMLAudioElement. `level` (0..1) is live input loudness for a reactive orb.
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import * as Sentry from "@sentry/nextjs";
@@ -34,12 +31,16 @@ function reportVoiceError(stage: string, err: unknown) {
 }
 
 // --- VAD tuning -----------------------------------------------------------
-// Normalized RMS (0..1) above which we treat the frame as speech.
+// Normalized RMS (0..1) above which a frame counts as speech while listening.
 const SPEECH_THRESHOLD = 0.018;
 // How long the input must stay quiet, after speech, before we end the turn.
 const SILENCE_HANGOVER_MS = 1100;
 // Ignore blips: a turn must contain at least this much detected speech.
 const MIN_SPEECH_MS = 250;
+// Barge-in needs a louder, more sustained signal than a normal turn so the
+// character's echo-cancelled voice can't accidentally interrupt itself.
+const BARGE_IN_THRESHOLD = 0.05;
+const BARGE_IN_MS = 320;
 
 export type VoiceStatus = "idle" | "listening" | "thinking" | "speaking";
 export type VoiceTurn = { role: "user" | "assistant"; text: string };
@@ -51,12 +52,8 @@ export type UseVoiceCall = {
   caption: string;
   /** Full ordered conversation, newest last. Render as a transcript. */
   transcript: VoiceTurn[];
-  /** Whether the listening loop is live (false = paused/muted by the user). */
-  micOn: boolean;
   /** Live input loudness, 0..1 — for a reactive orb / waveform. */
   level: number;
-  /** Pause / resume the whole listening loop (a real mute). */
-  toggleMic: () => void;
   /** Begin the call: request mic permission and start listening. */
   start: () => void;
   /** End the call: stop mic + any playback, reset to idle. Releases the mic. */
@@ -80,7 +77,6 @@ export function useVoiceCall({
   const [status, setStatus] = useState<VoiceStatus>("idle");
   const [caption, setCaption] = useState<string>("");
   const [transcript, setTranscript] = useState<VoiceTurn[]>([]);
-  const [micOn, setMicOn] = useState<boolean>(false);
   const [level, setLevel] = useState<number>(0);
 
   // Live machinery (never re-rendered).
@@ -98,12 +94,13 @@ export function useVoiceCall({
   // VAD bookkeeping.
   const speechMsRef = useRef<number>(0); // total speech detected this turn
   const silenceMsRef = useRef<number>(0); // trailing silence after speech
+  const bargeMsRef = useRef<number>(0); // sustained speech while char speaks
   const lastFrameRef = useRef<number>(0); // perf.now() of previous frame
   const turnEndingRef = useRef<boolean>(false); // guard against double-stop
 
-  // Status mirror so the rAF loop (a stale closure) reads the live phase.
+  // The call is live (between start() and end()). Drives auto-resume.
+  const activeRef = useRef<boolean>(false);
   const statusRef = useRef<VoiceStatus>("idle");
-  const micOnRef = useRef<boolean>(false);
 
   const transcriptRef = useRef<VoiceTurn[]>([]);
   const mountedRef = useRef<boolean>(true);
@@ -127,6 +124,8 @@ export function useVoiceCall({
   // --- teardown helpers (idempotent) ---------------------------------------
   const stopPlayback = useCallback(() => {
     if (audioRef.current) {
+      audioRef.current.onended = null;
+      audioRef.current.onerror = null;
       audioRef.current.pause();
       audioRef.current.src = "";
       audioRef.current = null;
@@ -170,11 +169,12 @@ export function useVoiceCall({
   // -------------------------------------------------------------------------
   const armRecorder = useCallback(() => {
     const stream = mediaStreamRef.current;
-    if (!stream || !mountedRef.current) return;
+    if (!stream || !mountedRef.current || !activeRef.current) return;
 
     chunksRef.current = [];
     speechMsRef.current = 0;
     silenceMsRef.current = 0;
+    bargeMsRef.current = 0;
     turnEndingRef.current = false;
 
     const recorder = new MediaRecorder(stream);
@@ -187,10 +187,7 @@ export function useVoiceCall({
       const type = recorder.mimeType || "audio/webm";
       const blob = new Blob(chunksRef.current, { type });
       chunksRef.current = [];
-      if (!hadSpeech) {
-        // Nothing said (e.g. paused / ended). Don't transcribe.
-        return;
-      }
+      if (!hadSpeech) return; // nothing said (e.g. ended) — don't transcribe
       void transcribeAndRespond(blob);
     };
     recorder.start();
@@ -206,8 +203,16 @@ export function useVoiceCall({
     if (recorder && recorder.state !== "inactive") recorder.stop();
   }, []);
 
-  // The continuous analysis loop. Runs for the whole call; only acts on frames
-  // while we're actively listening.
+  // Barge-in: the user spoke over the character. Cut the playback and hand the
+  // floor straight back to them (start capturing now; we lose only the ~320ms
+  // of onset it took to confirm they meant it).
+  const bargeIn = useCallback(() => {
+    stopPlayback();
+    if (activeRef.current) armRecorder();
+  }, [stopPlayback, armRecorder]);
+
+  // The continuous analysis loop — runs the whole call. Ends turns on silence
+  // while listening, and detects barge-in while the character is speaking.
   const runVadLoop = useCallback(() => {
     const analyser = analyserRef.current;
     if (!analyser) return;
@@ -216,7 +221,6 @@ export function useVoiceCall({
     const tick = () => {
       if (!mountedRef.current || !analyserRef.current) return;
       analyser.getByteTimeDomainData(buf);
-      // RMS around the 128 midpoint, normalized to ~0..1.
       let sum = 0;
       for (let i = 0; i < buf.length; i++) {
         const v = (buf[i] - 128) / 128;
@@ -228,17 +232,28 @@ export function useVoiceCall({
       const dt = lastFrameRef.current ? now - lastFrameRef.current : 16;
       lastFrameRef.current = now;
 
-      // Only show live level + run VAD while actually listening.
-      if (statusRef.current === "listening" && micOnRef.current) {
+      const cur = statusRef.current;
+      if (cur === "listening") {
         setLevel(Math.min(1, rms * 6));
         if (rms >= SPEECH_THRESHOLD) {
           speechMsRef.current += dt;
           silenceMsRef.current = 0;
         } else if (speechMsRef.current >= MIN_SPEECH_MS) {
           silenceMsRef.current += dt;
-          if (silenceMsRef.current >= SILENCE_HANGOVER_MS) {
-            endTurn();
+          if (silenceMsRef.current >= SILENCE_HANGOVER_MS) endTurn();
+        }
+      } else if (cur === "speaking") {
+        // Show the user's own level so they can see they're being heard, and
+        // watch for a deliberate cut-in.
+        setLevel(Math.min(1, rms * 6));
+        if (rms >= BARGE_IN_THRESHOLD) {
+          bargeMsRef.current += dt;
+          if (bargeMsRef.current >= BARGE_IN_MS) {
+            bargeMsRef.current = 0;
+            bargeIn();
           }
+        } else {
+          bargeMsRef.current = 0;
         }
       } else {
         setLevel(0);
@@ -247,10 +262,10 @@ export function useVoiceCall({
       rafRef.current = requestAnimationFrame(tick);
     };
     rafRef.current = requestAnimationFrame(tick);
-  }, [endTurn]);
+  }, [endTurn, bargeIn]);
 
   // -------------------------------------------------------------------------
-  // Step: transcribe a captured turn, then reply + speak.
+  // Reply + speak, then auto-resume listening.
   // -------------------------------------------------------------------------
   const respondAndSpeak = useCallback(async () => {
     if (!mountedRef.current) return;
@@ -279,7 +294,7 @@ export function useVoiceCall({
       if (!mountedRef.current) return;
       setCaption("Something went wrong reaching the character. Still listening.");
       reportVoiceError("reply", err);
-      armRecorder(); // keep the call alive
+      armRecorder();
       return;
     }
 
@@ -287,7 +302,6 @@ export function useVoiceCall({
     pushTurn({ role: "assistant", text: replyText });
     setCaption(replyText);
 
-    // Synthesize + play, then auto-resume listening.
     try {
       const speechRes = await fetch("/api/speech", {
         method: "POST",
@@ -307,19 +321,19 @@ export function useVoiceCall({
       const resume = () => {
         if (!mountedRef.current) return;
         stopPlayback();
-        if (micOnRef.current) armRecorder();
+        if (activeRef.current) armRecorder();
         else setPhase("idle");
       };
       audio.onended = resume;
       audio.onerror = resume;
 
       setPhase("speaking");
+      bargeMsRef.current = 0;
       await audio.play();
     } catch (err) {
       if (!mountedRef.current) return;
       reportVoiceError("speech", err);
-      // Text reply is shown; resume listening so the call continues.
-      if (micOnRef.current) armRecorder();
+      if (activeRef.current) armRecorder();
       else setPhase("idle");
     }
   }, [character, script, voice, pushTurn, stopPlayback, armRecorder, setPhase]);
@@ -328,7 +342,7 @@ export function useVoiceCall({
     async (audioBlob: Blob) => {
       if (!mountedRef.current) return;
       if (audioBlob.size === 0) {
-        if (micOnRef.current) armRecorder();
+        if (activeRef.current) armRecorder();
         return;
       }
       setPhase("thinking");
@@ -346,14 +360,13 @@ export function useVoiceCall({
         if (!mountedRef.current) return;
         setCaption("I couldn't catch that — go ahead, I'm listening.");
         reportVoiceError("transcribe", err);
-        if (micOnRef.current) armRecorder();
+        if (activeRef.current) armRecorder();
         return;
       }
 
       if (!mountedRef.current) return;
       if (!userText) {
-        // Whisper heard noise but no words — just keep listening.
-        if (micOnRef.current) armRecorder();
+        if (activeRef.current) armRecorder();
         return;
       }
 
@@ -372,8 +385,7 @@ export function useVoiceCall({
     if (typeof navigator === "undefined" || !navigator.mediaDevices?.getUserMedia) {
       setCaption("This browser can't access the microphone.");
       setPhase("idle");
-      setMicOn(false);
-      micOnRef.current = false;
+      activeRef.current = false;
       return;
     }
     try {
@@ -390,7 +402,6 @@ export function useVoiceCall({
       }
       mediaStreamRef.current = stream;
 
-      // Build the analysis graph.
       type WindowWithWebkit = Window & { webkitAudioContext?: typeof AudioContext };
       const Ctx =
         window.AudioContext ?? (window as WindowWithWebkit).webkitAudioContext;
@@ -407,8 +418,6 @@ export function useVoiceCall({
       lastFrameRef.current = 0;
       runVadLoop();
 
-      setMicOn(true);
-      micOnRef.current = true;
       setCaption("");
       armRecorder();
     } catch (err) {
@@ -416,8 +425,7 @@ export function useVoiceCall({
         "Microphone access was blocked. Enable it in your browser to talk, or type a line instead.",
       );
       setPhase("idle");
-      setMicOn(false);
-      micOnRef.current = false;
+      activeRef.current = false;
       stopStream();
       reportVoiceError("mic", err);
     }
@@ -428,41 +436,15 @@ export function useVoiceCall({
   // -------------------------------------------------------------------------
   const start = useCallback(() => {
     if (statusRef.current !== "idle") return;
+    activeRef.current = true;
     void openMicAndListen();
   }, [openMicAndListen]);
 
-  const toggleMic = useCallback(() => {
-    if (micOnRef.current) {
-      // Pause the loop: stop capturing without ending the call.
-      micOnRef.current = false;
-      setMicOn(false);
-      const recorder = recorderRef.current;
-      if (recorder && recorder.state !== "inactive") {
-        recorder.onstop = null;
-        try {
-          recorder.stop();
-        } catch {
-          /* ignore */
-        }
-      }
-      setLevel(0);
-      setPhase("idle");
-    } else {
-      // Resume.
-      micOnRef.current = true;
-      setMicOn(true);
-      stopPlayback();
-      if (mediaStreamRef.current) armRecorder();
-      else void openMicAndListen();
-    }
-  }, [armRecorder, openMicAndListen, stopPlayback, setPhase]);
-
   const end = useCallback(() => {
-    micOnRef.current = false;
+    activeRef.current = false;
     stopStream();
     stopPlayback();
     teardownAudioGraph();
-    setMicOn(false);
     setLevel(0);
     setPhase("idle");
     setCaption("");
@@ -472,7 +454,7 @@ export function useVoiceCall({
     (text: string) => {
       const line = text.trim();
       if (!line) return;
-      // Don't let a typed line collide with a live capture.
+      // Don't let a typed line collide with a live capture / playback.
       const recorder = recorderRef.current;
       if (recorder && recorder.state !== "inactive") {
         recorder.onstop = null;
@@ -482,32 +464,24 @@ export function useVoiceCall({
           /* ignore */
         }
       }
+      stopPlayback();
       pushTurn({ role: "user", text: line });
       setCaption(line);
       void respondAndSpeak();
     },
-    [pushTurn, respondAndSpeak],
+    [pushTurn, respondAndSpeak, stopPlayback],
   );
 
   useEffect(() => {
     mountedRef.current = true;
     return () => {
       mountedRef.current = false;
+      activeRef.current = false;
       stopStream();
       stopPlayback();
       teardownAudioGraph();
     };
   }, [stopStream, stopPlayback, teardownAudioGraph]);
 
-  return {
-    status,
-    caption,
-    transcript,
-    micOn,
-    level,
-    toggleMic,
-    start,
-    end,
-    sendText,
-  };
+  return { status, caption, transcript, level, start, end, sendText };
 }
