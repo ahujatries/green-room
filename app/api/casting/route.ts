@@ -2,9 +2,19 @@
 //
 // The design's Video "read-through" has an empty casting slot ("who plays
 // {name}?"). This fills it: a cinematic portrait generated from the character's
-// spoiler-free `look`, via an image model routed through the Vercel AI Gateway
-// (same gateway path as /api/chat + /api/voice-reply — OIDC in prod, the pulled
-// token locally).
+// spoiler-free `look`, via an image model routed through the Vercel AI Gateway.
+//
+// SHIPPED DISABLED. This account is funded only for Anthropic (text) and
+// ElevenLabs (voice) — there is NO image-generation key, and the Vercel AI
+// Gateway image path fails on the free tier (the same wall that forced
+// chat + voice-reply onto Anthropic-direct and STT/TTS onto ElevenLabs-direct).
+// Claude does not generate images, so there is no funded drop-in provider.
+//
+// Rather than 500 on every click, casting is gated behind
+// NEXT_PUBLIC_CASTING_ENABLED. While unset/false, this route returns a clean
+// 503 and the UI shows an intentional "casting coming soon" state. To turn it
+// back on once an image provider is funded: wire IMAGE_MODEL to that provider
+// (and its key), then set NEXT_PUBLIC_CASTING_ENABLED=true.
 //
 // Request:  { character: Character }   (sent inline by the client; no auth/DB)
 // Response: { image: string }  — a data: URL (image/*) ready for <img src>/bg
@@ -17,8 +27,18 @@ import type { Character } from "@/lib/characters";
 export const maxDuration = 60;
 
 const IMAGE_MODEL = process.env.IMAGE_MODEL ?? "google/gemini-3-pro-image";
+const CASTING_ENABLED = process.env.NEXT_PUBLIC_CASTING_ENABLED === "true";
 
 export async function POST(req: Request) {
+  // No funded image provider → fail cleanly instead of hitting the gateway and
+  // 500ing. The client renders a "coming soon" state for this, never an error.
+  if (!CASTING_ENABLED) {
+    return Response.json(
+      { error: "Casting is coming soon.", available: false },
+      { status: 503 },
+    );
+  }
+
   let character: Character | undefined;
   try {
     const body = (await req.json()) as { character?: Character };

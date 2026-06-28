@@ -34,6 +34,13 @@ export function VideoView({
   >("idle");
   const timer = useTimer();
 
+  // AI casting needs an image-generation provider. This account is funded only
+  // for Anthropic (text) + ElevenLabs (voice) — no image key — so casting ships
+  // disabled and the slot shows an intentional "coming soon" state instead of a
+  // button that 500s. Flip NEXT_PUBLIC_CASTING_ENABLED=true (with /api/casting
+  // wired to a funded image model) to light it back up. See app/api/casting.
+  const castingEnabled = process.env.NEXT_PUBLIC_CASTING_ENABLED === "true";
+
   // Auto-start the continuous voice loop on entry; release the mic on exit.
   useEffect(() => {
     call.start();
@@ -53,7 +60,7 @@ export function VideoView({
   // Generate an AI casting photo for this character via /api/casting (an image
   // model through the Vercel AI Gateway). Character is sent inline — no auth.
   async function generateCasting() {
-    if (castState === "loading") return;
+    if (!castingEnabled || castState === "loading") return;
     setCastState("loading");
     try {
       const res = await fetch("/api/casting", {
@@ -96,20 +103,35 @@ export function VideoView({
             <span className="flex h-[110px] w-[110px] items-center justify-center rounded-2xl bg-canopy font-script text-[44px] text-[#f3eee3]">
               {character.initial}
             </span>
-            <button
-              onClick={generateCasting}
-              disabled={castState === "loading"}
-              className="rounded-full border border-spring/50 bg-spring/10 px-4 py-2 font-mono text-[8.5px] font-bold uppercase tracking-[0.13em] text-springpale transition-colors hover:border-spring disabled:opacity-60"
-            >
-              {castState === "loading" ? "casting…" : "✦ generate casting"}
-            </button>
-            <span className="max-w-[230px] text-center font-mono text-[8px] uppercase tracking-[0.13em] text-mist">
-              {castState === "auth"
-                ? "sign in to cast this role"
-                : castState === "error"
-                  ? "couldn't cast — try again"
-                  : `who plays ${character.name}?`}
-            </span>
+            {castingEnabled ? (
+              <>
+                <button
+                  onClick={generateCasting}
+                  disabled={castState === "loading"}
+                  className="rounded-full border border-spring/50 bg-spring/10 px-4 py-2 font-mono text-[8.5px] font-bold uppercase tracking-[0.13em] text-springpale transition-colors hover:border-spring disabled:opacity-60"
+                >
+                  {castState === "loading" ? "casting…" : "✦ generate casting"}
+                </button>
+                <span className="max-w-[230px] text-center font-mono text-[8px] uppercase tracking-[0.13em] text-mist">
+                  {castState === "auth"
+                    ? "sign in to cast this role"
+                    : castState === "error"
+                      ? "couldn't cast — try again"
+                      : `who plays ${character.name}?`}
+                </span>
+              </>
+            ) : (
+              <>
+                {/* No funded image provider yet — present casting as an
+                    intentional upcoming feature, not a broken button. */}
+                <span className="cursor-default rounded-full border border-bonelit/20 bg-bonelit/5 px-4 py-2 font-mono text-[8.5px] font-bold uppercase tracking-[0.13em] text-mist">
+                  ✦ casting · coming soon
+                </span>
+                <span className="max-w-[230px] text-center font-mono text-[8px] uppercase tracking-[0.13em] text-mist">
+                  ai casting is in the works
+                </span>
+              </>
+            )}
           </div>
         )}
 
