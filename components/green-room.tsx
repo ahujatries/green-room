@@ -156,6 +156,9 @@ function RoomShell({
               <span className="font-sans text-[18px] font-black tracking-tight text-bonelit">
                 the green room
               </span>
+              <span className="font-mono text-[8px] font-bold uppercase tracking-[0.16em] text-springpale">
+                by Arqo
+              </span>
               <div className="flex-1" />
               <button
                 onClick={onNewScript}

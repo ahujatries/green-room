@@ -5,6 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import type { Character } from "@/lib/characters";
 import type { ScriptListItem } from "@/lib/data/scripts";
 import { Chat, Phone, Video } from "./icons";
+import { ArqoCta } from "./arqo-cta";
 
 export type Mode = "chat" | "call" | "video";
 
@@ -135,6 +136,12 @@ export function HomeView({
           ))}
         </div>
       )}
+
+      {characters.length > 0 ? (
+        <div className="mt-7">
+          <ArqoCta variant="panel" />
+        </div>
+      ) : null}
 
       <p className="mt-[22px] border-t border-bonelit/15 px-0.5 pt-[14px] text-[11.5px] leading-[1.6] text-mist2">
         They only know what the page knows. Ask past it and they&rsquo;ll tell

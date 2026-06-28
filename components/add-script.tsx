@@ -86,6 +86,9 @@ export function AddScript({ onReady }: { onReady: (room: Room) => void }) {
             <span className="font-sans text-[18px] font-black tracking-tight text-bonelit">
               the green room
             </span>
+            <span className="font-mono text-[8px] font-bold uppercase tracking-[0.16em] text-springpale">
+              by Arqo
+            </span>
           </header>
 
           {/* body */}
@@ -176,6 +179,20 @@ export function AddScript({ onReady }: { onReady: (room: Room) => void }) {
             <p className="mt-7 text-[11.5px] leading-[1.6] text-mist2">
               They only know what the page knows. Your script stays in this
               browser — nothing is saved to an account.
+            </p>
+            <p className="mt-2 text-[11.5px] leading-[1.6] text-mist2">
+              The Green Room is a taste of{" "}
+              <span className="font-semibold text-fog">Arqo</span> — the
+              screenwriting studio that remembers your scripts, your cast, and
+              every page.{" "}
+              <a
+                href="https://www.tryarqo.com/waitlist"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="font-semibold text-springpale underline-offset-2 hover:underline"
+              >
+                Join the waitlist →
+              </a>
             </p>
           </div>
         </div>

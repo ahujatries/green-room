@@ -12,15 +12,24 @@ const courier = Courier_Prime({
 });
 
 export const metadata: Metadata = {
-  title: "The Green Room — an Arqo experiment",
+  metadataBase: new URL("https://greenroom.tryarqo.com"),
+  title: "The Green Room by Arqo — talk to the characters in your script",
   description:
-    "Talk to the people you're writing. A rehearsal room for screenwriters, grounded only in what the page has decided. An Arqo experiment.",
+    "Paste a script and talk to its characters — they only know what the page knows. A taste of Arqo, the screenwriting studio that remembers your scripts, your cast, and every page.",
+  applicationName: "The Green Room by Arqo",
   openGraph: {
-    title: "The Green Room",
+    title: "The Green Room by Arqo",
     description:
-      "Talk to the characters in your script. They only know what the page knows.",
-    siteName: "The Green Room",
+      "Paste a script and talk to its characters. They only know what the page knows. Free, by Arqo.",
+    siteName: "The Green Room by Arqo",
+    url: "https://greenroom.tryarqo.com",
     type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "The Green Room by Arqo",
+    description:
+      "Paste a script and talk to its characters. They only know what the page knows.",
   },
 };
 
