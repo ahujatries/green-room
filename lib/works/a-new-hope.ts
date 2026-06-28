@@ -4,6 +4,7 @@
 // Shift" as the one-tap SAMPLE_ROOM.
 
 import type { Character, Room, WorkScript } from "../characters";
+import { VOICES } from "../voices";
 import { A_NEW_HOPE_TEXT } from "./a-new-hope-text";
 
 const A_NEW_HOPE_SCRIPT: WorkScript = {
@@ -32,6 +33,7 @@ const A_NEW_HOPE_CAST: Character[] = [
 - Watches Ben cut down by Vader and hears Ben's voice keep guiding him afterward.`,
     voiceNote:
       "Earnest, impatient, young. Talks fast when he's excited and sulks when he's thwarted. Brave to the point of reckless. Wears every feeling on the surface.",
+    voiceId: VOICES.liam,
     openers: [
       "What were you really running from on Tatooine?",
       "When you switched off the targeting computer — what made you trust that voice?",
@@ -74,6 +76,7 @@ const A_NEW_HOPE_CAST: Character[] = [
 - On the Death Star he disables the tractor beam, then lets Vader strike him down — vanishing as he's struck — so the others can escape. His voice keeps speaking to Luke afterward.`,
     voiceNote:
       "Calm, courtly, unhurried. Speaks in gentle certainties and careful omissions. Kind, but always steering. Never says the whole truth at once.",
+    voiceId: VOICES.daniel,
     openers: [
       "What part of the truth about his father are you holding back, and why?",
       "What was Vader like, before?",
@@ -120,6 +123,7 @@ const A_NEW_HOPE_CAST: Character[] = [
 - At the end she awards the medals to the men who destroyed the Death Star.`,
     voiceNote:
       "Imperious, fast, withering. Commands rooms by default. Hides grief under control and contempt. Softens only when no one's looking.",
+    voiceId: VOICES.alice,
     openers: [
       "Where did the grief over Alderaan actually go?",
       "What do you really make of Han Solo?",
@@ -161,6 +165,7 @@ const A_NEW_HOPE_CAST: Character[] = [
 - Takes his reward and leaves before the Death Star battle — then turns the Falcon around at the last second, clears Vader off Luke's tail so Luke can make the shot.`,
     voiceNote:
       "Cocky, dry, deflecting. Brags to cover, argues for sport, hides anything that looks like it might matter to him. Funny, and knows it.",
+    voiceId: VOICES.chris,
     openers: [
       "You came back. Why won't you admit why?",
       "Do you actually believe in the Force, or not?",
@@ -206,6 +211,7 @@ const A_NEW_HOPE_CAST: Character[] = [
 - Feels Obi-Wan's presence aboard the station. In the final battle he flies to stop the Rebel run himself and is knocked clear of the trench at the last moment.`,
     voiceNote:
       "Slow, deliberate, absolute. Speaks rarely and means all of it. Contempt for the small-minded; reverence for the Force. Power that never has to raise its voice.",
+    voiceId: VOICES.adam,
     openers: [
       "What did you feel when you sensed Obi-Wan again?",
       "Why does their faith in the Death Star offend you so much?",

@@ -26,7 +26,7 @@ export function VideoView({
   script: WorkScript;
   onExit: () => void;
 }) {
-  const call = useVoiceCall({ character, script });
+  const call = useVoiceCall({ character, script, voice: character.voiceId });
   const [showScript, setShowScript] = useState(false);
   const [castImg, setCastImg] = useState<string | null>(null);
   const [castState, setCastState] = useState<

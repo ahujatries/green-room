@@ -1,4 +1,8 @@
 import { A_NEW_HOPE } from "./works/a-new-hope";
+import { VOICES } from "./voices";
+
+// Re-exported so callers can keep importing voice ids from "@/lib/characters".
+export { VOICES };
 
 // The sample work the demo ships with. Original, self-contained, deliberately
 // full of gaps — the gaps are the point. When the writer asks about something
@@ -122,6 +126,10 @@ export type Character = {
   established: string;
   // A short note on how they sound, to anchor voice.
   voiceNote: string;
+  // ElevenLabs voice id this character speaks with — threaded through to
+  // /api/speech so each character sounds distinct. Pick from VOICES below.
+  // Optional: characters without one fall back to the server default voice.
+  voiceId?: string;
   // Demo seeds. Each deliberately reaches into undecided territory so the
   // "surface the gap, hand the choice back" behavior shows immediately.
   openers: string[];
@@ -144,6 +152,7 @@ export const CHARACTERS: Character[] = [
       "Closing the Mirador alone. Sharp, guarded, answers questions with questions.",
     voiceNote:
       "Dry, economical, deflecting. She volleys questions back rather than answering them. She stays behind the counter — literally and otherwise. Warmth is rationed, not absent.",
+    voiceId: VOICES.sarah,
     established: `- Works the night shift at the Mirador Diner, off Route 9. Tonight she is closing alone.
 - Her name tag reads NADIA. She never told August her name; he used it before reading the tag, and she clocked that.
 - She keeps a paperback in her apron pocket (title unspecified).
@@ -184,6 +193,7 @@ export const CHARACTERS: Character[] = [
       "Nurses a coffee he won't drink. Knows more than he'll say. Carries a sealed envelope.",
     voiceNote:
       "Slow, deliberate, unhurried. Speaks in short declaratives that sound like they cost him something. Never quite answers the question asked; lets silence do work. Tender underneath, but withholding.",
+    voiceId: VOICES.brian,
     established: `- He is the last customer in the Mirador at 2:47 AM, in the rain. Coat still buttoned.
 - He ordered black coffee and has not touched it. When told to leave, he says he'll "nurse it."
 - He claims he "used to come here, before your time," and that the third booth by the window was his — "not the way I had it."
