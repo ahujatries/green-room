@@ -272,6 +272,80 @@ export function useVoiceCall({
   }, [endTurn, bargeIn]);
 
   // -------------------------------------------------------------------------
+  // Speak a line: synthesize it, play it (Vader fx or plain), resume listening.
+  // -------------------------------------------------------------------------
+  const speak = useCallback(
+    async (text: string) => {
+      try {
+        const hints = ttsHintsFor(character.voiceFx);
+        const speechRes = await fetch("/api/speech", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            text,
+            voice,
+            ...(hints
+              ? { modelId: hints.modelId, voiceSettings: hints.voiceSettings }
+              : {}),
+          }),
+        });
+        if (!speechRes.ok) throw new Error(`speech failed (${speechRes.status})`);
+        if (!mountedRef.current) return;
+
+        const resume = () => {
+          if (!mountedRef.current) return;
+          stopPlayback();
+          if (activeRef.current) armRecorder();
+          else setPhase("idle");
+        };
+
+        // Characters with playback fx (Vader's respirator/mask chain) run through
+        // Web Audio on the live AudioContext. Anything else — or if the context
+        // isn't open (e.g. mic was blocked) — uses plain HTMLAudio.
+        const ctx = audioCtxRef.current;
+        if (character.voiceFx && ctx) {
+          const buf = await speechRes.arrayBuffer();
+          if (!mountedRef.current) return;
+          stopPlayback();
+          setPhase("speaking");
+          bargeMsRef.current = 0;
+          try {
+            fxRef.current = await playVaderFx(ctx, buf, resume);
+          } catch {
+            // Decode failed — fall back to plain playback of the same bytes.
+            const url = URL.createObjectURL(new Blob([buf], { type: "audio/mpeg" }));
+            audioUrlRef.current = url;
+            const audio = new Audio(url);
+            audioRef.current = audio;
+            audio.onended = resume;
+            audio.onerror = resume;
+            await audio.play();
+          }
+        } else {
+          const blob = await speechRes.blob();
+          if (!mountedRef.current) return;
+          stopPlayback();
+          const url = URL.createObjectURL(blob);
+          audioUrlRef.current = url;
+          const audio = new Audio(url);
+          audioRef.current = audio;
+          audio.onended = resume;
+          audio.onerror = resume;
+          setPhase("speaking");
+          bargeMsRef.current = 0;
+          await audio.play();
+        }
+      } catch (err) {
+        if (!mountedRef.current) return;
+        reportVoiceError("speech", err);
+        if (activeRef.current) armRecorder();
+        else setPhase("idle");
+      }
+    },
+    [character, voice, stopPlayback, armRecorder, setPhase],
+  );
+
+  // -------------------------------------------------------------------------
   // Reply + speak, then auto-resume listening.
   // -------------------------------------------------------------------------
   const respondAndSpeak = useCallback(async () => {
@@ -308,73 +382,38 @@ export function useVoiceCall({
     if (!mountedRef.current) return;
     pushTurn({ role: "assistant", text: replyText });
     setCaption(replyText);
+    await speak(replyText);
+  }, [character, script, pushTurn, speak, armRecorder, setPhase]);
 
+  // -------------------------------------------------------------------------
+  // Greeting: the character "answers" on connect — a warm hello, or, for a
+  // villain, cold suspicion (who is this, how did you get this number).
+  // -------------------------------------------------------------------------
+  const greet = useCallback(async () => {
+    if (!mountedRef.current) return;
+    setPhase("thinking");
     try {
-      const hints = ttsHintsFor(character.voiceFx);
-      const speechRes = await fetch("/api/speech", {
+      const res = await fetch("/api/voice-reply", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          text: replyText,
-          voice,
-          ...(hints
-            ? { modelId: hints.modelId, voiceSettings: hints.voiceSettings }
-            : {}),
-        }),
+        body: JSON.stringify({ character, script, greeting: true }),
       });
-      if (!speechRes.ok) throw new Error(`speech failed (${speechRes.status})`);
-      if (!mountedRef.current) return;
-
-      const resume = () => {
-        if (!mountedRef.current) return;
-        stopPlayback();
-        if (activeRef.current) armRecorder();
-        else setPhase("idle");
-      };
-
-      // Characters with playback fx (Vader's respirator/mask chain) run through
-      // Web Audio on the live AudioContext. Anything else — or if the context
-      // isn't open (e.g. mic was blocked) — uses plain HTMLAudio.
-      const ctx = audioCtxRef.current;
-      if (character.voiceFx && ctx) {
-        const buf = await speechRes.arrayBuffer();
-        if (!mountedRef.current) return;
-        stopPlayback();
-        setPhase("speaking");
-        bargeMsRef.current = 0;
-        try {
-          fxRef.current = await playVaderFx(ctx, buf, resume);
-        } catch {
-          // Decode failed — fall back to plain playback of the same bytes.
-          const url = URL.createObjectURL(new Blob([buf], { type: "audio/mpeg" }));
-          audioUrlRef.current = url;
-          const audio = new Audio(url);
-          audioRef.current = audio;
-          audio.onended = resume;
-          audio.onerror = resume;
-          await audio.play();
-        }
-      } else {
-        const blob = await speechRes.blob();
-        if (!mountedRef.current) return;
-        stopPlayback();
-        const url = URL.createObjectURL(blob);
-        audioUrlRef.current = url;
-        const audio = new Audio(url);
-        audioRef.current = audio;
-        audio.onended = resume;
-        audio.onerror = resume;
-        setPhase("speaking");
-        bargeMsRef.current = 0;
-        await audio.play();
+      const data = (await res.json()) as { text?: string; error?: string };
+      if (!res.ok || !data.text) {
+        throw new Error(data.error || `greeting failed (${res.status})`);
       }
+      if (!mountedRef.current) return;
+      pushTurn({ role: "assistant", text: data.text });
+      setCaption(data.text);
+      await speak(data.text);
     } catch (err) {
       if (!mountedRef.current) return;
-      reportVoiceError("speech", err);
+      // Greeting is best-effort — if it fails, just start listening.
+      reportVoiceError("greeting", err);
       if (activeRef.current) armRecorder();
       else setPhase("idle");
     }
-  }, [character, script, voice, pushTurn, stopPlayback, armRecorder, setPhase]);
+  }, [character, script, pushTurn, speak, armRecorder, setPhase]);
 
   const transcribeAndRespond = useCallback(
     async (audioBlob: Blob) => {
@@ -457,7 +496,10 @@ export function useVoiceCall({
       runVadLoop();
 
       setCaption("");
-      armRecorder();
+      // On a fresh call the character answers first — a greeting, or a villain's
+      // wary "who is this." An in-progress call just resumes listening.
+      if (transcriptRef.current.length === 0) void greet();
+      else armRecorder();
     } catch (err) {
       setCaption(
         "Microphone access was blocked. Enable it in your browser to talk, or type a line instead.",
@@ -467,7 +509,7 @@ export function useVoiceCall({
       stopStream();
       reportVoiceError("mic", err);
     }
-  }, [runVadLoop, armRecorder, stopStream, setPhase]);
+  }, [runVadLoop, armRecorder, greet, stopStream, setPhase]);
 
   // -------------------------------------------------------------------------
   // Public actions
