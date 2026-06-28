@@ -1,32 +1,32 @@
 // POST /api/speech — text-to-speech, called directly (no Vercel AI Gateway).
 //
-// Two providers:
-//   • OpenAI tts-1 — the default for everyone (logged out, free, pro). Reliable,
-//     cheap, ships now. This replaces the gateway path that was 502-ing in prod.
-//   • ElevenLabs — higher-quality, more characterful voice, served ONLY to
-//     premium tiers (studio/staff/max) and ONLY when ELEVENLABS_API_KEY is set.
-//     Until both are in place the feature is dormant and everyone gets OpenAI.
+// ElevenLabs is the default voice for everyone when ELEVENLABS_API_KEY is set —
+// premium tiers (studio/staff/max) get a richer model and, if configured, a
+// premium voice id. OpenAI tts-1 is only a fallback for setups that have an
+// OpenAI key but no ElevenLabs key. (The gateway path was removed — it 502'd.)
 //
 // Request:  { text: string, voice?: string }
 // Response: 200 with raw MP3 bytes and Content-Type: audio/mpeg
-//           (so the client can do `new Audio(URL.createObjectURL(blob))`)
 //           On error: JSON { error } with a 4xx/5xx status.
 
 import { NextRequest } from "next/server";
-import { canUsePremiumVoice } from "@/lib/tier";
+import { isPremiumTier } from "@/lib/tier";
 
 export const maxDuration = 30;
 
-// OpenAI TTS — the default provider.
+// ElevenLabs — the default provider.
+const ELEVENLABS_MODEL = process.env.ELEVENLABS_MODEL ?? "eleven_turbo_v2_5";
+const ELEVENLABS_PREMIUM_MODEL =
+  process.env.ELEVENLABS_PREMIUM_MODEL ?? "eleven_multilingual_v2";
+const ELEVENLABS_DEFAULT_VOICE =
+  process.env.ELEVENLABS_VOICE_ID ?? "21m00Tcm4TlvDq8ikWAM"; // "Rachel"
+const ELEVENLABS_PREMIUM_VOICE =
+  process.env.ELEVENLABS_PREMIUM_VOICE_ID ?? ELEVENLABS_DEFAULT_VOICE;
+
+// OpenAI TTS — fallback only.
 const OPENAI_SPEECH_URL = "https://api.openai.com/v1/audio/speech";
 const OPENAI_SPEECH_MODEL = process.env.SPEECH_MODEL ?? "tts-1";
 const OPENAI_DEFAULT_VOICE = process.env.SPEECH_VOICE ?? "alloy";
-
-// ElevenLabs — the premium provider.
-const ELEVENLABS_MODEL = process.env.ELEVENLABS_MODEL ?? "eleven_turbo_v2_5";
-// A sensible default voice id; per-character voices can be layered on later.
-const ELEVENLABS_DEFAULT_VOICE =
-  process.env.ELEVENLABS_VOICE_ID ?? "21m00Tcm4TlvDq8ikWAM"; // "Rachel"
 
 export async function POST(req: NextRequest) {
   let text: string;
@@ -40,35 +40,74 @@ export async function POST(req: NextRequest) {
   }
 
   if (!text) {
-    return Response.json(
-      { error: "Missing `text` to synthesize." },
-      { status: 400 },
-    );
+    return Response.json({ error: "Missing `text` to synthesize." }, { status: 400 });
   }
 
-  // Premium users on a configured ElevenLabs key get the richer voice; everyone
-  // else (and any failure to confirm tier) falls through to OpenAI.
-  if (await canUsePremiumVoice()) {
-    const result = await synthesizeElevenLabs(text, voice);
+  const hasEleven = !!process.env.ELEVENLABS_API_KEY;
+  const hasOpenAI = !!process.env.OPENAI_API_KEY;
+
+  // ElevenLabs first (the configured provider). Fall back to OpenAI only if it
+  // fails AND an OpenAI key exists.
+  if (hasEleven) {
+    const premium = await isPremiumTier();
+    const result = await synthesizeElevenLabs(text, voice, premium);
     if (result) return result;
-    // ElevenLabs failed — degrade to OpenAI rather than 500 the call.
+    if (!hasOpenAI) {
+      return Response.json(
+        { error: "ElevenLabs speech failed and no OpenAI fallback configured." },
+        { status: 502 },
+      );
+    }
   }
 
-  return synthesizeOpenAI(text, voice);
+  if (hasOpenAI) return synthesizeOpenAI(text, voice);
+
+  return Response.json(
+    { error: "Speech is not configured. Set ELEVENLABS_API_KEY (or OPENAI_API_KEY)." },
+    { status: 500 },
+  );
 }
 
-// --- OpenAI tts-1 ---------------------------------------------------------
+// --- ElevenLabs (default) -------------------------------------------------
+// Returns a 200 MP3 Response on success, or null on any failure.
+async function synthesizeElevenLabs(
+  text: string,
+  voice: string | undefined,
+  premium: boolean,
+): Promise<Response | null> {
+  const apiKey = process.env.ELEVENLABS_API_KEY;
+  if (!apiKey) return null;
+  const voiceId =
+    voice || (premium ? ELEVENLABS_PREMIUM_VOICE : ELEVENLABS_DEFAULT_VOICE);
+  const modelId = premium ? ELEVENLABS_PREMIUM_MODEL : ELEVENLABS_MODEL;
+  try {
+    const upstream = await fetch(
+      `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}?output_format=mp3_44100_128`,
+      {
+        method: "POST",
+        headers: {
+          "xi-api-key": apiKey,
+          "Content-Type": "application/json",
+          Accept: "audio/mpeg",
+        },
+        body: JSON.stringify({ text, model_id: modelId }),
+      },
+    );
+    if (!upstream.ok) return null;
+    const bytes = Buffer.from(await upstream.arrayBuffer());
+    if (bytes.byteLength === 0) return null;
+    return mp3Response(bytes);
+  } catch {
+    return null;
+  }
+}
+
+// --- OpenAI tts-1 (fallback) ----------------------------------------------
 async function synthesizeOpenAI(
   text: string,
   voice: string | undefined,
 ): Promise<Response> {
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) {
-    return Response.json(
-      { error: "Speech is not configured. Set OPENAI_API_KEY." },
-      { status: 500 },
-    );
-  }
+  const apiKey = process.env.OPENAI_API_KEY!;
   try {
     const upstream = await fetch(OPENAI_SPEECH_URL, {
       method: "POST",
@@ -97,38 +136,6 @@ async function synthesizeOpenAI(
       { error: `Speech request errored: ${String(err)}` },
       { status: 500 },
     );
-  }
-}
-
-// --- ElevenLabs (premium) -------------------------------------------------
-// Returns a 200 MP3 Response on success, or null on any failure so the caller
-// can fall back to OpenAI.
-async function synthesizeElevenLabs(
-  text: string,
-  voice: string | undefined,
-): Promise<Response | null> {
-  const apiKey = process.env.ELEVENLABS_API_KEY;
-  if (!apiKey) return null;
-  const voiceId = voice || ELEVENLABS_DEFAULT_VOICE;
-  try {
-    const upstream = await fetch(
-      `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}?output_format=mp3_44100_128`,
-      {
-        method: "POST",
-        headers: {
-          "xi-api-key": apiKey,
-          "Content-Type": "application/json",
-          Accept: "audio/mpeg",
-        },
-        body: JSON.stringify({ text, model_id: ELEVENLABS_MODEL }),
-      },
-    );
-    if (!upstream.ok) return null;
-    const bytes = Buffer.from(await upstream.arrayBuffer());
-    if (bytes.byteLength === 0) return null;
-    return mp3Response(bytes);
-  } catch {
-    return null;
   }
 }
 

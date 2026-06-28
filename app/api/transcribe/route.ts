@@ -1,9 +1,8 @@
-// POST /api/transcribe — speech-to-text via OpenAI Whisper, called directly.
+// POST /api/transcribe — speech-to-text, called directly (no Vercel AI Gateway).
 //
-// We call api.openai.com straight (not the Vercel AI Gateway): the gateway's
-// audio modality was 502-ing in production on the free tier, the same wall that
-// already forced chat + voice-reply onto a direct provider. Whisper is an OpenAI
-// model, so the direct path is OpenAI.
+// ElevenLabs Scribe is the default STT when ELEVENLABS_API_KEY is set; OpenAI
+// whisper-1 is a fallback for setups with an OpenAI key but no ElevenLabs key.
+// (The gateway audio path was removed — it 502'd in production.)
 //
 // Accepts EITHER:
 //   • multipart/form-data with an `audio` file field (what MediaRecorder + a
@@ -16,18 +15,19 @@
 
 import { NextRequest } from "next/server";
 
-// Transcription of a short utterance is quick, but give it headroom on Vercel.
 export const maxDuration = 30;
 
-// Whisper via OpenAI. Overridable for testing / model swaps.
-const TRANSCRIBE_MODEL = process.env.TRANSCRIBE_MODEL ?? "whisper-1";
+const ELEVENLABS_STT_URL = "https://api.elevenlabs.io/v1/speech-to-text";
+const ELEVENLABS_STT_MODEL = process.env.ELEVENLABS_STT_MODEL ?? "scribe_v1";
 const OPENAI_TRANSCRIBE_URL = "https://api.openai.com/v1/audio/transcriptions";
+const OPENAI_TRANSCRIBE_MODEL = process.env.TRANSCRIBE_MODEL ?? "whisper-1";
 
 export async function POST(req: NextRequest) {
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) {
+  const elevenKey = process.env.ELEVENLABS_API_KEY;
+  const openaiKey = process.env.OPENAI_API_KEY;
+  if (!elevenKey && !openaiKey) {
     return Response.json(
-      { error: "Transcription is not configured. Set OPENAI_API_KEY." },
+      { error: "Transcription is not configured. Set ELEVENLABS_API_KEY (or OPENAI_API_KEY)." },
       { status: 500 },
     );
   }
@@ -35,7 +35,6 @@ export async function POST(req: NextRequest) {
   // --- 1. Normalize the incoming audio into a Blob + filename. ---
   let audioBlob: Blob;
   let filename: string;
-
   const contentType = req.headers.get("content-type") ?? "";
 
   try {
@@ -54,7 +53,6 @@ export async function POST(req: NextRequest) {
       audioBlob = file;
       filename = (file instanceof File && file.name) || "speech.webm";
     } else {
-      // Assume JSON { audio: base64, mediaType? }.
       const body = (await req.json()) as { audio?: string; mediaType?: string };
       if (!body.audio || typeof body.audio !== "string") {
         return Response.json(
@@ -62,7 +60,6 @@ export async function POST(req: NextRequest) {
           { status: 400 },
         );
       }
-      // Tolerate a data: URL prefix if a caller sends one.
       const base64 = body.audio.includes(",")
         ? body.audio.slice(body.audio.indexOf(",") + 1)
         : body.audio;
@@ -78,35 +75,69 @@ export async function POST(req: NextRequest) {
       filename = `speech.${ext}`;
     }
   } catch {
-    return Response.json(
-      { error: "Could not parse request body." },
-      { status: 400 },
-    );
+    return Response.json({ error: "Could not parse request body." }, { status: 400 });
   }
 
-  // --- 2. Hand the audio to OpenAI's transcription endpoint (multipart). ---
-  try {
-    const upstreamForm = new FormData();
-    upstreamForm.append("file", audioBlob, filename);
-    upstreamForm.append("model", TRANSCRIBE_MODEL);
-
-    const upstream = await fetch(OPENAI_TRANSCRIBE_URL, {
-      method: "POST",
-      headers: { Authorization: `Bearer ${apiKey}` },
-      body: upstreamForm,
-    });
-
-    if (!upstream.ok) {
-      const detail = await upstream.text().catch(() => "");
+  // --- 2. Transcribe. ElevenLabs first; OpenAI fallback. ---
+  if (elevenKey) {
+    const text = await transcribeElevenLabs(audioBlob, filename, elevenKey);
+    if (text !== null) return Response.json({ text });
+    if (!openaiKey) {
       return Response.json(
-        {
-          error: `Transcription upstream failed (${upstream.status}).`,
-          detail: detail.slice(0, 500),
-        },
+        { error: "ElevenLabs transcription failed and no OpenAI fallback configured." },
         { status: 502 },
       );
     }
+  }
 
+  return transcribeOpenAI(audioBlob, filename, openaiKey!);
+}
+
+// --- ElevenLabs Scribe (default) — returns text, or null on failure. ------
+async function transcribeElevenLabs(
+  audioBlob: Blob,
+  filename: string,
+  apiKey: string,
+): Promise<string | null> {
+  try {
+    const form = new FormData();
+    form.append("file", audioBlob, filename);
+    form.append("model_id", ELEVENLABS_STT_MODEL);
+    const upstream = await fetch(ELEVENLABS_STT_URL, {
+      method: "POST",
+      headers: { "xi-api-key": apiKey },
+      body: form,
+    });
+    if (!upstream.ok) return null;
+    const result = (await upstream.json()) as { text?: string };
+    return result.text ?? "";
+  } catch {
+    return null;
+  }
+}
+
+// --- OpenAI whisper-1 (fallback) ------------------------------------------
+async function transcribeOpenAI(
+  audioBlob: Blob,
+  filename: string,
+  apiKey: string,
+): Promise<Response> {
+  try {
+    const form = new FormData();
+    form.append("file", audioBlob, filename);
+    form.append("model", OPENAI_TRANSCRIBE_MODEL);
+    const upstream = await fetch(OPENAI_TRANSCRIBE_URL, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${apiKey}` },
+      body: form,
+    });
+    if (!upstream.ok) {
+      const detail = await upstream.text().catch(() => "");
+      return Response.json(
+        { error: `Transcription upstream failed (${upstream.status}).`, detail: detail.slice(0, 500) },
+        { status: 502 },
+      );
+    }
     const result = (await upstream.json()) as { text?: string };
     return Response.json({ text: result.text ?? "" });
   } catch (err) {

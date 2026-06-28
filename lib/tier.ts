@@ -1,8 +1,9 @@
 import { getUser } from "@/lib/supabase/user";
 
-// Which subscription tiers unlock the premium (ElevenLabs) voice. Everyone else
-// — logged out, free, pro — gets the solid OpenAI default. Overridable via env
-// so the premium set can change without a deploy.
+// Which subscription tiers get the *premium* voice — a higher-quality ElevenLabs
+// model (and, if set, a premium voice id). Everyone gets ElevenLabs; premium
+// tiers just get the richer model. Overridable via env so the premium set can
+// change without a deploy.
 const PREMIUM_TIERS = (
   process.env.PREMIUM_VOICE_TIERS ?? "studio,staff,max"
 )
@@ -36,11 +37,10 @@ export async function getUserTier(): Promise<Tier> {
   }
 }
 
-// Does the current user get the premium voice? True only when a premium tier AND
-// an ElevenLabs key are both present — so the feature stays fully dormant (and
-// the working OpenAI path untouched) until both are deliberately in place.
-export async function canUsePremiumVoice(): Promise<boolean> {
-  if (!process.env.ELEVENLABS_API_KEY) return false;
+// Is the current user on a premium tier? Used only to pick the richer ElevenLabs
+// model/voice — base ElevenLabs is served to everyone regardless. Fails safe to
+// false so a missing/renamed plan field never accidentally upgrades the voice.
+export async function isPremiumTier(): Promise<boolean> {
   const tier = await getUserTier();
   return PREMIUM_TIERS.includes(tier);
 }
