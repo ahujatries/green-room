@@ -1,4 +1,4 @@
-import { getUser } from "@/lib/supabase/user";
+import { createClient } from "@/lib/supabase/server";
 
 // Which subscription tiers get the *premium* voice — a higher-quality ElevenLabs
 // model (and, if set, a premium voice id). Everyone gets ElevenLabs; premium
@@ -13,25 +13,38 @@ const PREMIUM_TIERS = (
 
 export type Tier = string;
 
-// Best-effort "what plan is this user on?" — read from the Supabase user the
-// app already authenticates (Green Room shares Arqo's red-ball auth). We look in
-// the usual metadata slots; if nothing is found we fail safe to "free" so a
-// missing/renamed field can never accidentally hand out the premium voice.
+// "What plan is this user on?" — read from Arqo's authoritative subscription
+// record. Green Room shares Arqo's red-ball Supabase, where the plan lives in
+// `public.profiles.subscription_state` (text: 'free' | 'pro' |
+// 'pro_launch_pricing' | 'studio' | 'team' | 'canceled'), keyed by the auth
+// user id. We read it with the request's *own* authenticated session: the
+// profiles RLS policy lets an authenticated user SELECT their own row, so no
+// service-role key is needed (and Green Room only ships the anon key by design).
 //
-// NOTE: Arqo's authoritative subscription record may live in a table rather than
-// auth metadata. If so, point this one function at that lookup — every gate
-// below reads through it, so nothing else has to change.
+// Everything fails safe to "free": no session, a missing/renamed column, an
+// RLS denial, or any thrown error all resolve to "free" so a glitch can never
+// accidentally hand out the premium voice. (This is *not* the auth-metadata
+// best-effort it used to be — that returned "free" for everyone because the
+// real plan was never written to user metadata.)
 export async function getUserTier(): Promise<Tier> {
   try {
-    const user = await getUser();
+    const supabase = await createClient();
+    // getUser() validates the token against the Auth server rather than
+    // trusting the cookie — the right default for an authorization decision.
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) return "free";
-    const meta = {
-      ...(user.app_metadata as Record<string, unknown> | undefined),
-      ...(user.user_metadata as Record<string, unknown> | undefined),
-    };
-    const raw =
-      meta.plan ?? meta.tier ?? meta.subscription_tier ?? meta.subscription;
-    return typeof raw === "string" ? raw.toLowerCase() : "free";
+
+    const { data, error } = await supabase
+      .from("profiles")
+      .select("subscription_state")
+      .eq("id", user.id)
+      .maybeSingle();
+    if (error || !data) return "free";
+
+    const state = (data as { subscription_state?: unknown }).subscription_state;
+    return typeof state === "string" && state ? state.toLowerCase() : "free";
   } catch {
     return "free";
   }
