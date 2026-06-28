@@ -28,7 +28,7 @@ export function CallView({
   script: WorkScript;
   onExit: () => void;
 }) {
-  const call = useVoiceCall({ character, script });
+  const call = useVoiceCall({ character, script, voice: character.voiceId });
   const [showScript, setShowScript] = useState(false);
   const timer = useTimer();
   const live = call.status === "speaking" || call.status === "listening";
