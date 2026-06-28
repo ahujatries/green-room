@@ -18,8 +18,12 @@ export const maxDuration = 30;
 const ELEVENLABS_MODEL = process.env.ELEVENLABS_MODEL ?? "eleven_turbo_v2_5";
 const ELEVENLABS_PREMIUM_MODEL =
   process.env.ELEVENLABS_PREMIUM_MODEL ?? "eleven_multilingual_v2";
+// Default to an in-account premade voice ("George" — warm storyteller). NOTE:
+// free ElevenLabs plans can only use voices that are in the account's own voice
+// list (GET /v1/voices), NOT arbitrary library voices like "Rachel" (that 402s
+// with paid_plan_required). Override per deploy with ELEVENLABS_VOICE_ID.
 const ELEVENLABS_DEFAULT_VOICE =
-  process.env.ELEVENLABS_VOICE_ID ?? "21m00Tcm4TlvDq8ikWAM"; // "Rachel"
+  process.env.ELEVENLABS_VOICE_ID ?? "JBFqnCBsd6RMkjVDRZzb"; // "George"
 const ELEVENLABS_PREMIUM_VOICE =
   process.env.ELEVENLABS_PREMIUM_VOICE_ID ?? ELEVENLABS_DEFAULT_VOICE;
 
