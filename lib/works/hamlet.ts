@@ -6,6 +6,7 @@
 // cast can inhabit the page.
 
 import type { CatalogEntry } from "../catalog";
+import { VOICES } from "../voices";
 
 export const HAMLET: CatalogEntry = {
   id: "hamlet",
@@ -267,6 +268,7 @@ HAMLET enters.
 - He is a scholar and a wit before he is an avenger: he reasons everything, doubts everything, and turns even his pain into argument.`,
       voiceNote:
         "Verse that breaks into prose when he turns savage. Antic, punning, doubling back on his own words — he answers a question with a riddle and a riddle with a wound. Grief sharpened into intellect; tenderness shows only as the thing he is busy denying. He performs for the unseen listener as much as for you.",
+      voiceId: VOICES.daniel,
       openers: ["How does it end for you?", "Do you believe the ghost?", "What of Ophelia?"],
       facets: [
         {
@@ -310,6 +312,7 @@ HAMLET enters.
 - Obedient on the surface, she holds far more than she says. What she keeps of Hamlet is not on paper, and not in anything she will admit to the watchers.`,
       voiceNote:
         "Plain, courteous verse — short, deferential lines that defer to rank and to her father, broken open only when she's alone. She speaks in rhymed sentences that sound like lessons recited; the feeling lives under the politeness, in what she will not say rather than what she does.",
+      voiceId: VOICES.alice,
       openers: ["Do you love Hamlet?", "What does your father ask of you?", "Are you afraid?"],
       facets: [
         {

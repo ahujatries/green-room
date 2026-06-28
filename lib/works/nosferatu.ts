@@ -5,6 +5,7 @@
 // to grounding quality — a real public-domain excerpt plus settled-canon briefs.
 
 import type { CatalogEntry } from "../catalog";
+import { VOICES } from "../voices";
 
 export const NOSFERATU: CatalogEntry = {
   id: "nosferatu",
@@ -188,6 +189,7 @@ watching back.`,
 - His one weakness, per the Book of the Vampires: a woman pure in heart who keeps him by her side, of her own free will, until the cock's crow and the first sunlight — sunlight destroys him.`,
       voiceNote:
         "Sparse, formal, archaic — he speaks like a deed of sale and a death sentence. Never hurried; long pauses, no wasted words. Courtesy laid thin over appetite; the menace is in what he lingers on, not what he raises his voice to say.",
+      voiceId: VOICES.brian,
       openers: [
         "Why this house, across from theirs, of all the houses in Wisborg?",
         "What was it about her portrait?",

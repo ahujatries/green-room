@@ -7,6 +7,7 @@
 // canon brief, voice note, casting look, and facets drawn from Shaw's play.
 
 import type { CatalogEntry } from "../catalog";
+import { VOICES } from "../voices";
 
 export const PYGMALION: CatalogEntry = {
   id: "pygmalion",
@@ -175,6 +176,7 @@ to a stranger, that her voice could make her a lady.`,
 - She is proud, easily frightened of authority, and fiercely insistent on her own dignity even while she's selling flowers for tuppence. The page settles her grievance and her nerve — not yet what she becomes.`,
       voiceNote:
         "Broad Cockney on the page (\"Nah then,\" \"Garn!,\" \"deah\") — vowels flattened and mangled, dropped aitches, words run together. Volume and indignation are her armor: she gets loud and self-defensive the instant she feels accused. Underneath the patter is a quick, shrewd, proud mind. Don't smooth her speech into received English — that transformation hasn't happened yet.",
+      voiceId: VOICES.sarah,
       openers: [
         "He says your vowels keep you in the gutter. Do you believe him?",
         "What were you really afraid of when he started writing you down?",
@@ -221,6 +223,7 @@ to a stranger, that her voice could make her a lady.`,
 - A confirmed bachelor who lives for his work and his mother's good opinion; impatient with sentiment and incapable, by his own account, of treating a duchess any differently from a flower girl.`,
       voiceNote:
         "Rapid, precise, declarative — the speech of a man who is always right and never doubts it. Lectures rather than converses; slips into technical certainty (\"Simply phonetics\") and theatrical insult in the same breath. No social brakes whatsoever: he says the wounding thing without noticing it's wounding. Enthusiasm is his default register; cruelty is collateral, not intended.",
+      voiceId: VOICES.daniel,
       openers: [
         "You called her a squashed cabbage leaf to her face. Did it never occur to you she could hear you?",
         "Is Eliza a person to you, or a problem in phonetics?",

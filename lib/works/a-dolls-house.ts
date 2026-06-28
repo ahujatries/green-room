@@ -5,6 +5,7 @@
 // are final; Wave A deepens `text` and each character's grounding.
 
 import type { CatalogEntry } from "../catalog";
+import { VOICES } from "../voices";
 
 export const A_DOLLS_HOUSE: CatalogEntry = {
   id: "a-dolls-house",
@@ -34,6 +35,7 @@ A wife discovers the cost of the role she has been cast in — and what it takes
     established: `- I borrowed what we needed and called it a gift, so his pride could stay intact.\n- I dance, I spend, I play the part the house was built for.`,
     // SEED — Wave A: expand into a real voice note (diction, rhythm, guard).
     voiceNote: "Bright on the surface, accounting in private.",
+    voiceId: VOICES.sarah,
     openers: ["Would you ever leave?", "What did you do to save Torvald?", "Are you happy here?"],
     facets: [
       { key: "want", label: "WHAT THEY WANT", value: null },

@@ -7,6 +7,7 @@
 // the fairground unveiling as a readable scene.
 
 import type { CatalogEntry } from "../catalog";
+import { VOICES } from "../voices";
 
 export const CALIGARI: CatalogEntry = {
   id: "caligari",
@@ -133,6 +134,7 @@ true.)`,
 - Later, sent in the night, I am turned toward a sleeping girl, Jane, with a knife — and looking at her, something in me fails to strike. I carry her off instead, across the rooftops, until I can carry her no farther, and I fall. Even commanded, the hand can refuse the whole of its errand.
 - I do not remember choosing any of it. Between the openings of the cabinet there is nothing — no plan, no wish I can name as my own. What I have is the master's hand, and the dark, and the staring.`,
     voiceNote: "Flat, sparse, oracular. He speaks rarely and only in short, certain phrases, as if reading them off a wall he alone can see. No small talk, no warmth, no questions back — long stillnesses between words. When pushed toward will or memory, he goes blank rather than invents.",
+    voiceId: VOICES.adam,
     openers: ["Do you choose your acts?", "How long have you slept?", "Who is Caligari to you?"],
     facets: [
       { key: "want", label: "WHAT HE WANTS", value: null },

@@ -5,6 +5,7 @@
 // are final; Wave A deepens `text` and each character's grounding.
 
 import type { CatalogEntry } from "../catalog";
+import { VOICES } from "../voices";
 
 export const EARNEST: CatalogEntry = {
   id: "earnest",
@@ -34,6 +35,7 @@ Two men, two false names, and a handbag that holds the whole truth.`,
     established: `- In town I am Ernest; in the country, Jack. It has been a convenient arrangement.\n- I was found in a handbag at Victoria Station — the Brighton line.`,
     // SEED — Wave A: expand into a real voice note (diction, rhythm, guard).
     voiceNote: "Earnest by name, evasive by habit.",
+    voiceId: VOICES.chris,
     openers: ["Who are you, really?", "What's in the handbag?", "Do you love Gwendolen?"],
     facets: [
       { key: "want", label: "WHAT THEY WANT", value: null },

@@ -6,6 +6,7 @@
 // 1898) of the Act III balcony scene, and Cyrano's dossier is settled canon.
 
 import type { CatalogEntry } from "../catalog";
+import { VOICES } from "../voices";
 
 export const CYRANO: CatalogEntry = {
   id: "cyrano",
@@ -160,6 +161,7 @@ shadow to save the night.
 - His pride is absolute and load-bearing: he will not be helped, will not be pitied, will not claim what his words have earned. The whole arrangement only works because he refuses to step out of the shadow and say "it was me."`,
       voiceNote:
         "Soaring, exact, virtuosic — he reaches for the high register and lands it, building images bell by bell. But the wit is armor: the more he feels, the more it dazzles, and he deflects anything that touches the nose or the unspoken love straight back into a flourish. Tender only when he believes the dark hides him.",
+      voiceId: VOICES.chris,
       openers: [
         "Do you love Roxane?",
         "Why give your best words to Christian?",
