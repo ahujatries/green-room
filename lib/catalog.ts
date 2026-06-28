@@ -1,69 +1,46 @@
 // The Green Room catalog — the curated library the app ships with.
 //
-// The brutalist "call-sheet" flow opens on a featured sample (The Last Shift)
-// and a shelf of public-domain plays. Each entry is a self-contained room: a
-// WorkScript the model is grounded in plus the cast derived from it — the same
-// shape add-script.tsx produces for a pasted screenplay, so every downstream
-// screen (detail / chat / call / video) treats catalog rooms and pasted rooms
+// The brutalist "call-sheet" flow opens on a single featured demo room: Star
+// Wars — A New Hope. Each entry is a self-contained room: a WorkScript the
+// model is grounded in plus the cast derived from it — the same shape
+// add-script.tsx produces for a pasted screenplay, so every downstream screen
+// (detail / chat / call / video) treats catalog rooms and pasted rooms
 // identically.
 
 import type { Character, Room, WorkScript } from "./characters";
-import { SCRIPT, CHARACTERS } from "./characters";
 
-import { HAMLET } from "./works/hamlet";
-import { A_DOLLS_HOUSE } from "./works/a-dolls-house";
-import { EARNEST } from "./works/earnest";
-import { CYRANO } from "./works/cyrano";
-import { PYGMALION } from "./works/pygmalion";
-import { CALIGARI } from "./works/caligari";
-import { NOSFERATU } from "./works/nosferatu";
+import { A_NEW_HOPE } from "./works/a-new-hope";
 
 /** A library entry: a grounded room plus the display metadata the call-sheet
  *  library / detail screens render (eyebrow + meta line). `script` and `cast`
  *  are exactly what the chat/voice routes consume. */
 export type CatalogEntry = {
-  /** Stable slug, e.g. "hamlet". */
+  /** Stable slug, e.g. "a-new-hope". */
   id: string;
-  /** Mono eyebrow over the title, e.g. "Public domain · tragedy". */
+  /** Mono eyebrow over the title, e.g. "Sample · feature film". */
   eyebrow: string;
-  /** Mono meta line, e.g. "c. 1600 · William Shakespeare". */
+  /** Mono meta line, e.g. "1977 · George Lucas". */
   meta: string;
   script: WorkScript;
   cast: Character[];
 };
 
-// The Arqo-original sample, repackaged from the still-being-written demo in
-// characters.ts. It's the "Featured · talk now" card — finished enough to talk
-// to, deliberately full of gaps.
-export const LAST_SHIFT: CatalogEntry = {
-  id: "last-shift",
-  eyebrow: "Arqo original · sample",
-  meta: "Arqo original · short film",
-  script: {
-    title: SCRIPT.title,
-    format: SCRIPT.format,
-    logline: SCRIPT.logline,
-    text: SCRIPT.text,
-  },
-  cast: CHARACTERS,
+// The one demo room. Star Wars — Episode IV: A New Hope, a finished film
+// grounded in its complete spoken script, so the cast gives a writer a lot back
+// the moment they open the Green Room.
+export const A_NEW_HOPE_ENTRY: CatalogEntry = {
+  id: "a-new-hope",
+  eyebrow: "Sample · feature film",
+  meta: "1977 · Star Wars Episode IV",
+  script: A_NEW_HOPE.script,
+  cast: A_NEW_HOPE.cast,
 };
 
 /** The featured room shown first in the library ("talk now"). */
-export const FEATURED: CatalogEntry = LAST_SHIFT;
+export const FEATURED: CatalogEntry = A_NEW_HOPE_ENTRY;
 
-/** The public-domain shelf, in the order the prototype lists them. */
-export const PUBLIC_DOMAIN: CatalogEntry[] = [
-  HAMLET,
-  A_DOLLS_HOUSE,
-  EARNEST,
-  CYRANO,
-  PYGMALION,
-  CALIGARI,
-  NOSFERATU,
-];
-
-/** Everything in the catalog, featured first. */
-export const WORKS: CatalogEntry[] = [FEATURED, ...PUBLIC_DOMAIN];
+/** Everything in the catalog, featured first. A single demo room for now. */
+export const WORKS: CatalogEntry[] = [FEATURED];
 
 export function getWork(id: string): CatalogEntry | undefined {
   return WORKS.find((w) => w.id === id);
