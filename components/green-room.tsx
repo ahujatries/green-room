@@ -3,20 +3,24 @@
 // The client root of The Green Room — call-sheet brutalist flow.
 //
 // A small screen state machine inside one phone-shaped "field":
-//   entry → consent → library → detail → chat / call / video
+//   entry → signin → library → detail → chat / call / video
 // The library is the curated catalog (lib/catalog.ts); a writer can also paste
-// their own script (AddScript), which becomes a "custom" room handled exactly
-// like a catalog entry. No auth, no DB — the room is passed inline to the
-// chat/voice routes, and a pasted room is remembered in localStorage.
+// their own script (AddScript) or — once signed in with their Arqo account —
+// open one of their REAL Arqo scripts, loaded on demand into the same room
+// shape. Catalog rooms, pasted rooms and real Arqo rooms are all handled
+// identically downstream; the chat/voice routes ground on `room.script.text`.
 
 import { useState } from "react";
 
 import type { Character, Room } from "@/lib/characters";
 import { fileFraction } from "@/lib/characters";
 import { FEATURED, WORKS, getWork, type CatalogEntry } from "@/lib/catalog";
+import type { ScriptListItem } from "@/lib/data/scripts";
+import { loadMyRoom } from "@/app/actions/data";
+import { signOut } from "@/app/actions/auth";
 import { AddScript } from "@/components/add-script";
 import { EntryView } from "@/components/entry-view";
-import { ConsentView } from "@/components/consent-view";
+import { SignInView } from "@/components/sign-in-view";
 import { LibraryView } from "@/components/library-view";
 import { DetailView } from "@/components/detail-view";
 import { ChatView } from "@/components/chat-view";
@@ -26,14 +30,23 @@ import { DossierSheet } from "@/components/dossier-sheet";
 
 export type Screen =
   | "entry"
-  | "consent"
+  | "signin"
   | "library"
   | "detail"
   | "chat"
   | "call"
   | "video";
-export type Account = "none" | "free" | "arqo";
+export type Account = "none" | "arqo";
 export type Mode = "chat" | "call" | "video";
+
+/** The signed-in writer, as the client needs it (the server maps it from the
+ *  Supabase session in app/page.tsx). Null when nobody's signed in. */
+export type GrUser = {
+  id: string;
+  email: string | null;
+  name: string;
+  initial: string;
+} | null;
 
 const STORAGE_KEY = "gr:room:v1";
 const CUSTOM = "custom";
@@ -42,18 +55,31 @@ const CUSTOM = "custom";
 // retraces the exact path (library → detail → chat → back → back …).
 type Frame = { screen: Screen; workId: string | null; charId: string | null };
 
-export function GreenRoom() {
+export function GreenRoom({
+  initialUser = null,
+  initialScripts = [],
+}: {
+  initialUser?: GrUser;
+  initialScripts?: ScriptListItem[];
+}) {
   const [screen, setScreen] = useState<Screen>("entry");
-  const [account, setAccount] = useState<Account>("none");
+  const [account] = useState<Account>(initialUser ? "arqo" : "none");
   const [workId, setWorkId] = useState<string | null>(null);
   const [charId, setCharId] = useState<string | null>(null);
   const [customRoom, setCustomRoom] = useState<Room | null>(null);
+  // The writer's real Arqo scripts, and a cache of any we've fully loaded into
+  // a room (page text + cast) so re-opening one is instant.
+  const [myScripts] = useState<ScriptListItem[]>(initialScripts);
+  const [realRooms, setRealRooms] = useState<Record<string, Room>>({});
+  const [busy, setBusy] = useState(false);
   const [dossier, setDossier] = useState(false);
   const [adding, setAdding] = useState(false);
   const [, setHistory] = useState<Frame[]>([]);
 
-  // The active catalog entry — a real catalog work, or a synthesized entry that
-  // wraps a pasted script so every downstream screen stays catalog-shaped.
+  // The active catalog entry — a pasted room, one of the writer's real Arqo
+  // scripts (loaded into `realRooms`), or a curated catalog work. Every branch
+  // resolves to the same catalog-shaped entry so downstream screens are blind
+  // to where the room came from.
   const entry: CatalogEntry | null =
     workId === CUSTOM && customRoom
       ? {
@@ -63,9 +89,17 @@ export function GreenRoom() {
           script: customRoom.script,
           cast: customRoom.cast,
         }
-      : workId
-        ? (getWork(workId) ?? null)
-        : null;
+      : workId && realRooms[workId]
+        ? {
+            id: workId,
+            eyebrow: "Your script",
+            meta: realRooms[workId].script.format || "your script",
+            script: realRooms[workId].script,
+            cast: realRooms[workId].cast,
+          }
+        : workId
+          ? (getWork(workId) ?? null)
+          : null;
 
   const character: Character | undefined = entry?.cast.find(
     (c) => c.id === charId,
@@ -102,6 +136,26 @@ export function GreenRoom() {
     nav(mode, { charId: id });
   }
 
+  // Open one of the writer's REAL Arqo scripts: load its room (page text + cast)
+  // through the RLS-scoped server action the first time, cache it, then show its
+  // detail screen exactly like a catalog room.
+  async function openMyScript(scriptId: string) {
+    if (realRooms[scriptId]) {
+      nav("detail", { workId: scriptId, charId: null });
+      return;
+    }
+    setBusy(true);
+    try {
+      const room = await loadMyRoom(scriptId);
+      if (room) {
+        setRealRooms((m) => ({ ...m, [scriptId]: room }));
+        nav("detail", { workId: scriptId, charId: null });
+      }
+    } finally {
+      setBusy(false);
+    }
+  }
+
   // Pasted-script path: AddScript overlay → custom room → its detail screen.
   function onReadyCustom(room: Room) {
     setCustomRoom(room);
@@ -119,20 +173,19 @@ export function GreenRoom() {
   }
 
   const showBrand =
-    screen === "entry" || screen === "consent" || screen === "library";
+    screen === "entry" || screen === "signin" || screen === "library";
   const showBack = screen === "detail" || screen === "chat";
   const bare = screen === "call" || screen === "video"; // full-bleed, own chrome
   const backLabel = account === "none" ? "The Green Room" : "The Library";
 
-  const acctMap: Record<
-    Account,
-    { label: string; name: string; initial: string }
-  > = {
-    none: { label: "Guest", name: "no account", initial: "·" },
-    free: { label: "Free account", name: "reader", initial: "+" },
-    arqo: { label: "Signed in", name: "Isabella", initial: "I" },
-  };
-  const acct = acctMap[account];
+  const acct =
+    account === "arqo" && initialUser
+      ? {
+          label: "Signed in",
+          name: initialUser.name,
+          initial: initialUser.initial,
+        }
+      : { label: "Guest", name: "no account", initial: "·" };
 
   return (
     <main className="flex min-h-dvh w-full items-center justify-center bg-forest p-0 font-sans sm:p-6">
@@ -140,7 +193,7 @@ export function GreenRoom() {
         {/* clap-stripe cap */}
         <div className="clap h-[10px] flex-none border-b-2 border-brink" />
 
-        {/* ── Brand header (entry / consent / library) ─────────────────── */}
+        {/* ── Brand header (entry / signin / library) ──────────────────── */}
         {showBrand && (
           <header className="flex flex-none items-center gap-[9px] border-b-2 border-brink bg-headerdeep px-4 py-[13px]">
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -149,7 +202,28 @@ export function GreenRoom() {
               The <span className="text-spring">Green</span> Room
             </span>
             <span className="flex-1" />
-            {screen === "library" ? (
+            {screen === "library" && account === "arqo" ? (
+              // Avatar doubles as the sign-out control (server action).
+              <form action={signOut}>
+                <button
+                  type="submit"
+                  title="Sign out"
+                  className="flex items-center gap-2"
+                >
+                  <span className="text-right">
+                    <span className="block font-mono text-[7.5px] font-bold uppercase tracking-[0.1em] text-spring">
+                      {acct.label}
+                    </span>
+                    <span className="block max-w-[92px] truncate font-mono text-[8px] text-field">
+                      {acct.name}
+                    </span>
+                  </span>
+                  <span className="flex h-[30px] w-[30px] flex-none items-center justify-center rounded-full border-2 border-brink bg-spring font-script text-[14px] font-bold text-brink">
+                    {acct.initial}
+                  </span>
+                </button>
+              </form>
+            ) : screen === "library" ? (
               <span className="flex items-center gap-2">
                 <span className="text-right">
                   <span className="block font-mono text-[7.5px] font-bold uppercase tracking-[0.1em] text-spring">
@@ -245,28 +319,19 @@ export function GreenRoom() {
               more={WORKS.filter((w) => w.id !== FEATURED.id)}
               onMeetCast={() => openWork(FEATURED.id)}
               onOpenWork={openWork}
-              onConnect={() => nav("consent")}
+              onConnect={() => nav("signin")}
             />
           )}
-          {screen === "consent" && (
-            <ConsentView
-              onCreateFree={() => {
-                setAccount("free");
-                nav("library");
-              }}
-              onAuthorize={() => {
-                setAccount("arqo");
-                nav("library");
-              }}
-              onBack={back}
-            />
-          )}
+          {screen === "signin" && <SignInView onBack={back} />}
           {screen === "library" && (
             <LibraryView
               featured={FEATURED}
               works={WORKS.filter((w) => w.id !== FEATURED.id)}
+              myScripts={myScripts}
               account={account}
               onOpen={openWork}
+              onOpenMine={openMyScript}
+              onSignIn={() => nav("signin")}
               onPasteOwn={() => setAdding(true)}
             />
           )}
@@ -297,6 +362,15 @@ export function GreenRoom() {
               script={entry.script}
               onExit={back}
             />
+          )}
+
+          {/* Loading veil while a real Arqo room is fetched. */}
+          {busy && (
+            <div className="absolute inset-0 z-20 flex items-center justify-center bg-field/70 backdrop-blur-[1px]">
+              <span className="border-2 border-brink bg-bonepaper px-3 py-2 font-mono text-[9px] font-bold uppercase tracking-[0.13em] text-brink hard-sm">
+                Opening your script…
+              </span>
+            </div>
           )}
         </div>
 

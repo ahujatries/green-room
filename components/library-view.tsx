@@ -1,32 +1,36 @@
 "use client";
 
-// LIBRARY — the catalog shelf. A "Featured · talk now" hero room (Star Wars), a
-// "More to talk to" shelf for the rest of the catalog (e.g. Bee Movie), and a
-// door to paste your own. Expressed in the call-sheet tokens.
+// LIBRARY — the shelf. A "Featured · talk now" hero room (Star Wars), then the
+// writer's OWN Arqo scripts when signed in (a sign-in door when not), then a
+// "More to talk to" shelf for the rest of the catalog and a paste-your-own
+// door. Expressed in the call-sheet tokens.
 
 import type { Account } from "@/components/green-room";
 import type { CatalogEntry } from "@/lib/catalog";
 import { coverInitial } from "@/lib/catalog";
+import type { ScriptListItem } from "@/lib/data/scripts";
 
 export function LibraryView({
   featured,
   works,
+  myScripts,
   account,
   onOpen,
+  onOpenMine,
+  onSignIn,
   onPasteOwn,
 }: {
   featured: CatalogEntry;
   works: CatalogEntry[];
+  myScripts: ScriptListItem[];
   account: Account;
   onOpen: (id: string) => void;
+  onOpenMine: (id: string) => void;
+  onSignIn: () => void;
   onPasteOwn: () => void;
 }) {
-  const acctLabel =
-    account === "arqo"
-      ? "Signed in"
-      : account === "free"
-        ? "Free account"
-        : "No account · guest";
+  const signedIn = account === "arqo";
+  const acctLabel = signedIn ? "Signed in" : "No account · guest";
 
   return (
     <div className="flex h-full flex-col">
@@ -80,6 +84,68 @@ export function LibraryView({
           </div>
         </button>
 
+        {/* ── Your scripts ─────────────────────────────────────────────── */}
+        <div className="mb-[11px] mt-[18px] flex items-center gap-2.5">
+          <span className="font-mono text-[9px] font-bold uppercase tracking-[0.2em] text-canopytext">
+            Your scripts
+          </span>
+          <span className="h-0.5 flex-1 bg-brink/15" />
+          <span className="font-mono text-[8px] font-medium uppercase tracking-[0.1em] text-quill">
+            {acctLabel}
+          </span>
+        </div>
+
+        {!signedIn ? (
+          // Guest — the door into real sign-in.
+          <button
+            onClick={onSignIn}
+            className="block w-full border-2 border-brink bg-forest p-4 text-left"
+          >
+            <p className="mb-[13px] text-[12.5px] leading-[1.5] text-quill2">
+              Sign in with Arqo to talk to <em>your</em> cast — your scripts come
+              with you.
+            </p>
+            <span className="flex w-full items-center justify-center gap-2 border-2 border-brink bg-spring p-[12px] font-mono text-[10px] font-bold uppercase tracking-[0.12em] text-brink">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/arqo-spiral.svg" alt="" className="h-[15px] w-[15px]" />
+              Sign in with Arqo
+            </span>
+          </button>
+        ) : myScripts.length > 0 ? (
+          <div className="flex flex-col gap-2.5">
+            {myScripts.map((s) => (
+              <button
+                key={s.id}
+                onClick={() => onOpenMine(s.id)}
+                className="lift flex items-center gap-3 border-2 border-brink bg-bonepaper px-3 py-[11px] text-left hard-sm"
+              >
+                <span className="flex h-[52px] w-[52px] flex-none items-center justify-center border-2 border-brink bg-forest font-script text-[22px] font-bold text-field">
+                  {coverInitial(s.title)}
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate font-script text-[13.5px] font-bold leading-[1.1] text-brink">
+                    {s.title}
+                  </span>
+                  <span className="mt-[3px] block truncate font-mono text-[8px] uppercase tracking-[0.08em] text-quill">
+                    {[s.format, s.pageCount ? `${s.pageCount} pp` : null]
+                      .filter(Boolean)
+                      .join(" · ") || "your script"}
+                  </span>
+                </span>
+                <span className="flex-none font-mono text-[14px] text-brink">
+                  →
+                </span>
+              </button>
+            ))}
+          </div>
+        ) : (
+          // Signed in, nothing written yet.
+          <p className="border-2 border-dashed border-brink/40 px-3 py-4 text-center font-mono text-[9.5px] leading-[1.6] uppercase tracking-[0.06em] text-quill">
+            No scripts in your Arqo account yet. Write one in Arqo and it&apos;ll
+            show up here.
+          </p>
+        )}
+
         {/* ── More to talk to (catalog samples + paste-your-own) ───────── */}
         <div className="mb-[11px] mt-[18px] flex items-center gap-2.5">
           <span className="font-mono text-[9px] font-bold uppercase tracking-[0.2em] text-canopytext">
@@ -87,7 +153,7 @@ export function LibraryView({
           </span>
           <span className="h-0.5 flex-1 bg-brink/15" />
           <span className="font-mono text-[8px] font-medium uppercase tracking-[0.1em] text-quill">
-            {acctLabel}
+            Samples
           </span>
         </div>
 
