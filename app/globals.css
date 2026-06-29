@@ -195,6 +195,15 @@ body {
   );
 }
 
+/* Red clap-stripe — the "light's gone dark" auth-error cap. */
+.clap-red {
+  background: repeating-linear-gradient(
+    90deg,
+    #3a0f0a 0 13px,
+    #e8633a 13px 26px
+  );
+}
+
 /* Hard offset shadows — the signature of the look. No blur, pure ink block.
    Use the size that matches the element's weight (sm cards → lg hero). */
 .hard-sm {
