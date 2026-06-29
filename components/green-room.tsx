@@ -242,7 +242,9 @@ export function GreenRoom() {
           {screen === "entry" && (
             <EntryView
               featured={FEATURED}
+              more={WORKS.filter((w) => w.id !== FEATURED.id)}
               onMeetCast={() => openWork(FEATURED.id)}
+              onOpenWork={openWork}
               onConnect={() => nav("consent")}
             />
           )}

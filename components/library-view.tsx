@@ -1,7 +1,7 @@
 "use client";
 
-// LIBRARY — the catalog shelf. A "Featured · talk now" hero room (the single
-// Star Wars demo), an (empty-by-default) shelf for any further rooms, and a
+// LIBRARY — the catalog shelf. A "Featured · talk now" hero room (Star Wars), a
+// "More to talk to" shelf for the rest of the catalog (e.g. Bee Movie), and a
 // door to paste your own. Expressed in the call-sheet tokens.
 
 import type { Account } from "@/components/green-room";
@@ -80,10 +80,10 @@ export function LibraryView({
           </div>
         </button>
 
-        {/* ── Your scripts ─────────────────────────────────────────────── */}
+        {/* ── More to talk to (catalog samples + paste-your-own) ───────── */}
         <div className="mb-[11px] mt-[18px] flex items-center gap-2.5">
           <span className="font-mono text-[9px] font-bold uppercase tracking-[0.2em] text-canopytext">
-            Your scripts
+            More to talk to
           </span>
           <span className="h-0.5 flex-1 bg-brink/15" />
           <span className="font-mono text-[8px] font-medium uppercase tracking-[0.1em] text-quill">
