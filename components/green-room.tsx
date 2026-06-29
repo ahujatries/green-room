@@ -9,13 +9,18 @@
 // like a catalog entry. No auth, no DB — the room is passed inline to the
 // chat/voice routes, and a pasted room is remembered in localStorage.
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import type { Character, Room } from "@/lib/characters";
 import { fileFraction } from "@/lib/characters";
 import { FEATURED, WORKS, getWork, type CatalogEntry } from "@/lib/catalog";
 import { AddScript } from "@/components/add-script";
 import { EntryView } from "@/components/entry-view";
+import { ConsentView } from "@/components/consent-view";
+import { HandoffView } from "@/components/handoff-view";
+import { WelcomeView } from "@/components/welcome-view";
+import { AuthErrorView } from "@/components/auth-error-view";
+import { UserMenu } from "@/components/user-menu";
 import { LibraryView } from "@/components/library-view";
 import { DetailView } from "@/components/detail-view";
 import { ChatView } from "@/components/chat-view";
@@ -25,6 +30,10 @@ import { DossierSheet } from "@/components/dossier-sheet";
 
 export type Screen =
   | "entry"
+  | "consent"
+  | "handoff"
+  | "welcome"
+  | "autherror"
   | "library"
   | "detail"
   | "chat"
@@ -35,6 +44,13 @@ export type Mode = "chat" | "call" | "video";
 
 const STORAGE_KEY = "gr:room:v1";
 const CUSTOM = "custom";
+
+// The Arqo identity the preview signs you in as. No real OAuth backend on the
+// gated preview yet — the consent → handoff → welcome flow is faithful UI that
+// hands this writer to the room. Swap for the real Supabase user when the
+// /auth/callback round-trip lands here.
+const ARQO_USER = { name: "Isabella Vizetta", email: "isabella@tryarqo.com" };
+const HANDOFF_MS = 1500;
 
 // One nav frame, snapshotted onto a back-stack so the brutalist back button
 // retraces the exact path (library → detail → chat → back → back …).
@@ -100,6 +116,30 @@ export function GreenRoom() {
     nav(mode, { charId: id });
   }
 
+  // ── Sign-in-with-Arqo flow ──────────────────────────────────────────────
+  // entry → consent → handoff → welcome → library. These are takeover screens
+  // that don't belong on the in-room back-stack, so they drive `setScreen`
+  // directly and reset history when they return you to the entry.
+  function resetTo(next: Screen) {
+    setHistory([]);
+    setDossier(false);
+    setScreen(next);
+  }
+  function authorizeArqo() {
+    setScreen("handoff");
+  }
+  function enterAsArqo() {
+    setAccount("arqo");
+    resetTo("library");
+  }
+
+  // Hold on the handoff beat, then drop into the welcome screen.
+  useEffect(() => {
+    if (screen !== "handoff") return;
+    const t = setTimeout(() => setScreen("welcome"), HANDOFF_MS);
+    return () => clearTimeout(t);
+  }, [screen]);
+
   // Pasted-script path: AddScript overlay → custom room → its detail screen.
   function onReadyCustom(room: Room) {
     setCustomRoom(room);
@@ -124,19 +164,32 @@ export function GreenRoom() {
   return (
     <main className="flex min-h-dvh w-full items-center justify-center bg-forest p-0 font-sans sm:p-6">
       <div className="relative flex h-dvh w-full max-w-[440px] flex-col overflow-hidden bg-field text-brink sm:h-[860px] sm:max-h-[calc(100dvh-3rem)] sm:border-2 sm:border-brink sm:shadow-[10px_10px_0_0_var(--color-forestdeep)]">
-        {/* clap-stripe cap */}
-        <div className="clap h-[10px] flex-none border-b-2 border-brink" />
+        {/* clap-stripe cap — red when the light's gone dark (auth error) */}
+        <div
+          className={`${screen === "autherror" ? "clap-red" : "clap"} h-[10px] flex-none border-b-2 border-brink`}
+        />
 
         {/* ── Brand header (entry / library) ───────────────────────────── */}
         {showBrand && (
-          <header className="flex flex-none items-center gap-[9px] border-b-2 border-brink bg-headerdeep px-4 py-[13px]">
+          <header className="flex flex-none items-center gap-[9px] border-b-2 border-brink bg-headerdeep px-4 py-[11px]">
             <span className="font-sans text-[16px] font-black uppercase leading-none tracking-[-0.01em] text-callbone">
               The <span className="text-spring">Green</span> Room
             </span>
             <span className="flex-1" />
-            <span className="border-2 border-spring px-2 py-[5px] font-mono text-[8px] font-bold uppercase tracking-[0.12em] text-spring">
-              Private preview
-            </span>
+            {account === "arqo" ? (
+              <UserMenu
+                name={ARQO_USER.name}
+                email={ARQO_USER.email}
+                onSignOut={() => {
+                  setAccount("none");
+                  resetTo("entry");
+                }}
+              />
+            ) : (
+              <span className="border-2 border-spring px-2 py-[5px] font-mono text-[8px] font-bold uppercase tracking-[0.12em] text-spring">
+                Private preview
+              </span>
+            )}
           </header>
         )}
 
@@ -202,12 +255,32 @@ export function GreenRoom() {
           {screen === "entry" && (
             <EntryView
               featured={FEATURED}
-              onMeetCast={() => openWork(FEATURED.id)}
-              onConnect={() => {
+              onSignIn={() => resetTo("consent")}
+              onBrowse={() => {
                 setAccount("free");
                 nav("library");
               }}
+              onMeetCast={() => openWork(FEATURED.id)}
             />
+          )}
+          {screen === "consent" && (
+            <ConsentView
+              name={ARQO_USER.name}
+              email={ARQO_USER.email}
+              onAuthorize={authorizeArqo}
+              onCancel={() => resetTo("entry")}
+            />
+          )}
+          {screen === "handoff" && <HandoffView />}
+          {screen === "welcome" && (
+            <WelcomeView
+              name={ARQO_USER.name}
+              email={ARQO_USER.email}
+              onEnter={enterAsArqo}
+            />
+          )}
+          {screen === "autherror" && (
+            <AuthErrorView onRetry={() => resetTo("entry")} />
           )}
           {screen === "library" && (
             <LibraryView
