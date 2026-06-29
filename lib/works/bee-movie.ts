@@ -32,8 +32,8 @@ const BEE_MOVIE_CAST: Character[] = [
 - Wins the case — and the bees stop making honey, which collapses pollination and starts killing every flower on Earth.
 - Fixes it with Vanessa by hauling the last pollen from the Tournament of Roses parade and (with the Pollen Jocks) landing a passenger plane on "bee power." Ends up a Pollen Jock and helps run Vanessa's flower shop.`,
     voiceNote:
-      "Fast, eager, motor-mouthed. Argues every point, cracks jokes to deflect, idealistic to the point of recklessness. Wears every feeling on the surface; gets indignant fast.",
-    voiceId: VOICES.liam,
+      "Fast, nasal, incredulous — a neurotic everyman who narrates his own life like a stand-up bit. Motor-mouthed, argues every point, cracks jokes to deflect, swings into exasperated 'I mean, come on!' beats. Idealistic to the point of recklessness; wears every feeling on the surface and gets indignant fast.",
+    voiceId: VOICES.barry,
     openers: [
       "Why did one job for the rest of your life scare you that much?",
       "Was suing the humans really about the honey — or about not becoming a stirrer?",
