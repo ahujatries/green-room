@@ -1,19 +1,27 @@
 "use client";
 
-// ENTRY — the call sheet. First screen: tonight's featured room + a door to
-// "your own scripts". Pixel-faithful port of PROTOTYPE.html › ENTRY (Option C):
-// a featured film card (cover well + meta + logline → onMeetCast) above a dark
-// "Your own scripts?" panel (→ onConnect).
+// ENTRY — the call sheet. First screen: tonight's featured room, any further
+// catalog rooms, and a door to "your own scripts". Pixel-faithful port of
+// PROTOTYPE.html › ENTRY (Option C): a featured film card (cover well + meta +
+// logline → onMeetCast), then a compact "also tonight" shelf for the rest of
+// the catalog (→ onOpenWork), above a dark "Your own scripts?" panel
+// (→ onConnect).
 
 import type { CatalogEntry } from "@/lib/catalog";
+import { coverInitial } from "@/lib/catalog";
 
 export function EntryView({
   featured,
+  more,
   onMeetCast,
+  onOpenWork,
   onConnect,
 }: {
   featured: CatalogEntry;
+  /** The rest of the catalog (everything except the featured room). */
+  more: CatalogEntry[];
   onMeetCast: () => void;
+  onOpenWork: (id: string) => void;
   onConnect: () => void;
 }) {
   const { script, cast } = featured;
@@ -58,6 +66,45 @@ export function EntryView({
           </span>
         </div>
       </button>
+
+      {/* Also tonight — the rest of the catalog, each a one-tap room */}
+      {more.length > 0 && (
+        <div className="mt-[18px]">
+          <div className="mb-[11px] flex items-center gap-2.5">
+            <span className="font-mono text-[9px] font-bold uppercase tracking-[0.2em] text-canopytext">
+              Also tonight
+            </span>
+            <span className="h-0.5 flex-1 bg-brink/15" />
+            <span className="font-mono text-[8px] font-medium uppercase tracking-[0.1em] text-quill">
+              No account
+            </span>
+          </div>
+          <div className="flex flex-col gap-2.5">
+            {more.map((w) => (
+              <button
+                key={w.id}
+                onClick={() => onOpenWork(w.id)}
+                className="lift flex items-center gap-3 border-2 border-brink bg-bonepaper px-3 py-[11px] text-left hard-sm"
+              >
+                <span className="flex h-[52px] w-[52px] flex-none items-center justify-center border-2 border-brink bg-forest font-script text-[22px] font-bold text-field">
+                  {coverInitial(w.script.title)}
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate font-script text-[13.5px] font-bold leading-[1.1] text-brink">
+                    {w.script.title}
+                  </span>
+                  <span className="mt-[3px] block truncate font-mono text-[8px] uppercase tracking-[0.08em] text-quill">
+                    {w.eyebrow} · {w.cast.length} char.
+                  </span>
+                </span>
+                <span className="flex-none font-mono text-[14px] text-brink">
+                  →
+                </span>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       <span className="flex-1" />
 
