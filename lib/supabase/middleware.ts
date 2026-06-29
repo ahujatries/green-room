@@ -1,6 +1,8 @@
 import { createServerClient, type CookieOptions } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 
+import { getCookieDomain } from "@/lib/supabase/cookie-domain";
+
 type CookieToSet = { name: string; value: string; options: CookieOptions };
 
 // Session-refresh helper for Next.js middleware. Rotates the auth cookies on
@@ -19,10 +21,15 @@ export async function updateSession(request: NextRequest) {
     return { supabaseResponse, user: null, configured: false };
   }
 
+  // On *.tryarqo.com, scope the refreshed cookie to `.tryarqo.com` so the
+  // session is shared with Arqo. Host-only elsewhere (localhost/preview).
+  const cookieDomain = getCookieDomain(request.headers.get("host"));
+
   const supabase = createServerClient(
     supabaseUrl,
     supabaseKey,
     {
+      ...(cookieDomain ? { cookieOptions: { domain: cookieDomain } } : {}),
       cookies: {
         getAll() {
           return request.cookies.getAll();

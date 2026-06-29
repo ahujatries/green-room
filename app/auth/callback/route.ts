@@ -1,9 +1,10 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 
-// Handles both the OAuth (Google / GitHub) and the magic-link redirects.
+// Handles the magic-link redirect (the dev/localhost fallback sign-in path).
 // Supabase sends the user back here with a `code` to exchange for a session,
-// plus an optional `next` path to land on once they're signed in.
+// plus an optional `next` path to land on once they're signed in. The Arqo
+// shared-session round-trip uses /auth/landing instead (no code to exchange).
 export async function GET(request: Request) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
