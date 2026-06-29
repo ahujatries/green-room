@@ -1,15 +1,16 @@
 // The Green Room catalog — the curated library the app ships with.
 //
-// The brutalist "call-sheet" flow opens on a single featured demo room: Star
-// Wars — A New Hope. Each entry is a self-contained room: a WorkScript the
-// model is grounded in plus the cast derived from it — the same shape
-// add-script.tsx produces for a pasted screenplay, so every downstream screen
-// (detail / chat / call / video) treats catalog rooms and pasted rooms
+// The brutalist "call-sheet" flow opens on a featured demo room: Star Wars — A
+// New Hope, with Bee Movie alongside it. Each entry is a self-contained room: a
+// WorkScript the model is grounded in plus the cast derived from it — the same
+// shape add-script.tsx produces for a pasted screenplay, so every downstream
+// screen (detail / chat / call / video) treats catalog rooms and pasted rooms
 // identically.
 
 import type { Character, Room, WorkScript } from "./characters";
 
 import { A_NEW_HOPE } from "./works/a-new-hope";
+import { BEE_MOVIE } from "./works/bee-movie";
 
 /** A library entry: a grounded room plus the display metadata the call-sheet
  *  library / detail screens render (eyebrow + meta line). `script` and `cast`
@@ -36,11 +37,21 @@ export const A_NEW_HOPE_ENTRY: CatalogEntry = {
   cast: A_NEW_HOPE.cast,
 };
 
+// The second demo room. Bee Movie (2007), a finished animated feature grounded
+// in its complete spoken script — a comedic counterpoint to A New Hope.
+export const BEE_MOVIE_ENTRY: CatalogEntry = {
+  id: "bee-movie",
+  eyebrow: "Sample · feature film",
+  meta: "2007 · Bee Movie",
+  script: BEE_MOVIE.script,
+  cast: BEE_MOVIE.cast,
+};
+
 /** The featured room shown first in the library ("talk now"). */
 export const FEATURED: CatalogEntry = A_NEW_HOPE_ENTRY;
 
-/** Everything in the catalog, featured first. A single demo room for now. */
-export const WORKS: CatalogEntry[] = [FEATURED];
+/** Everything in the catalog, featured first. Two demo rooms. */
+export const WORKS: CatalogEntry[] = [FEATURED, BEE_MOVIE_ENTRY];
 
 export function getWork(id: string): CatalogEntry | undefined {
   return WORKS.find((w) => w.id === id);
