@@ -10,8 +10,13 @@
 // fast initial paint; these actions serve every subsequent selection.
 
 import { loadCharacters } from "@/lib/data/characters";
-import { loadScriptText, type LoadedScript } from "@/lib/data/scripts";
-import type { Character } from "@/lib/characters";
+import {
+  listScripts,
+  loadScriptText,
+  type LoadedScript,
+  type ScriptListItem,
+} from "@/lib/data/scripts";
+import type { Character, Room } from "@/lib/characters";
 
 /**
  * The cast of one of the writer's scripts, already mapped into the app's
@@ -34,4 +39,45 @@ export async function getScriptText(
 ): Promise<LoadedScript | null> {
   if (!scriptId) return null;
   return loadScriptText(scriptId);
+}
+
+/**
+ * The signed-in writer's own Arqo scripts, newest first — the "Your scripts"
+ * shelf in the Library. RLS scopes this to the caller, so an unauthenticated
+ * request matches nothing and gets []. The client calls this to refresh the
+ * list after sign-in without a full reload.
+ */
+export async function listMyScripts(): Promise<ScriptListItem[]> {
+  return listScripts();
+}
+
+/**
+ * Load one of the writer's scripts as a fully-grounded `Room` — the readable
+ * page text plus its cast, both RLS-scoped to the owner. This is the same shape
+ * the catalog rooms and pasted scripts use, so every downstream screen
+ * (detail / chat / call / video) treats a real Arqo script identically and the
+ * chat/voice routes ground on `room.script.text` with no special-casing.
+ *
+ * Returns null when the script isn't the writer's, is a vault script, or is
+ * untitled — anything we shouldn't be grounding a character in.
+ */
+export async function loadMyRoom(scriptId: string): Promise<Room | null> {
+  if (!scriptId) return null;
+
+  const [script, cast] = await Promise.all([
+    loadScriptText(scriptId),
+    loadCharacters(scriptId),
+  ]);
+
+  if (!script) return null;
+
+  return {
+    script: {
+      title: script.title,
+      format: script.format,
+      logline: script.logline ?? "",
+      text: script.text,
+    },
+    cast,
+  };
 }
