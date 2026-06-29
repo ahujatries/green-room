@@ -2,24 +2,53 @@
 
 import { useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { getCookieDomain } from "@/lib/supabase/cookie-domain";
 
-// NOTE: Google + magic-link are already configured for Arqo's Supabase project.
-// The GitHub provider may still need enabling in the Supabase dashboard
-// (Authentication → Providers → GitHub) before that button works end-to-end.
+// "Log in with Arqo" — the single production sign-in path.
+//
+// Green Room and Arqo share one Supabase project AND the `.tryarqo.com` parent
+// domain, so they share the same auth cookie. If a session already exists the
+// middleware picks it up silently and the user never sees this screen. When it
+// doesn't, "Continue with Arqo" sends them to Arqo's login with a `next` return
+// URL; Arqo authenticates them and redirects back here with the shared cookie
+// set.
+//
+// The email magic-link is kept ONLY as a dev/localhost fallback — it renders
+// just off-*.tryarqo.com (where the shared-cookie mechanism can't apply), as a
+// subordinate text link. Google + GitHub are gone.
 
-type OAuthProvider = "google" | "github";
+// Arqo's login page. The default points at production; overridable for preview
+// environments via env.
+const ARQO_LOGIN_URL =
+  process.env.NEXT_PUBLIC_ARQO_LOGIN_URL ?? "https://app.tryarqo.com/login";
 
 export function LoginForm({ next }: { next?: string }) {
   const supabase = createClient();
 
   const [email, setEmail] = useState("");
   const [sent, setSent] = useState(false);
-  const [loading, setLoading] = useState<null | "email" | OAuthProvider>(null);
+  const [loading, setLoading] = useState<null | "email" | "arqo">(null);
   const [error, setError] = useState<string | null>(null);
 
-  function redirectTo() {
-    const nextParam = next ? `?next=${encodeURIComponent(next)}` : "";
-    return `${location.origin}/auth/callback${nextParam}`;
+  // Magic-link is dev-only: render it solely on hosts where we can't share
+  // Arqo's cookie (localhost, *.vercel.app, custom dev domains). On
+  // *.tryarqo.com production users only ever see "Continue with Arqo".
+  const showDevMagicLink =
+    typeof window !== "undefined" &&
+    getCookieDomain(window.location.hostname) === undefined;
+
+  // Where Arqo (and the magic-link) should land the user back in Green Room.
+  function returnUrl() {
+    const nextParam =
+      next && next.startsWith("/") ? `?next=${encodeURIComponent(next)}` : "";
+    return `${location.origin}/auth/landing${nextParam}`;
+  }
+
+  function continueWithArqo() {
+    setError(null);
+    setLoading("arqo");
+    const target = `${ARQO_LOGIN_URL}?next=${encodeURIComponent(returnUrl())}`;
+    window.location.href = target;
   }
 
   async function sendMagicLink(e: React.FormEvent) {
@@ -29,7 +58,15 @@ export function LoginForm({ next }: { next?: string }) {
     setLoading("email");
     const { error } = await supabase.auth.signInWithOtp({
       email: email.trim(),
-      options: { emailRedirectTo: redirectTo() },
+      // Magic-link still uses /auth/callback — it returns with a `code` to
+      // exchange. (Arqo's round-trip uses /auth/landing — cookie already set.)
+      options: {
+        emailRedirectTo: `${location.origin}/auth/callback${
+          next && next.startsWith("/")
+            ? `?next=${encodeURIComponent(next)}`
+            : ""
+        }`,
+      },
     });
     setLoading(null);
     if (error) {
@@ -37,20 +74,6 @@ export function LoginForm({ next }: { next?: string }) {
       return;
     }
     setSent(true);
-  }
-
-  async function signInWith(provider: OAuthProvider) {
-    setError(null);
-    setLoading(provider);
-    const { error } = await supabase.auth.signInWithOAuth({
-      provider,
-      options: { redirectTo: redirectTo() },
-    });
-    // On success the browser is redirected away; we only reach here on error.
-    if (error) {
-      setLoading(null);
-      setError(error.message);
-    }
   }
 
   if (sent) {
@@ -83,56 +106,20 @@ export function LoginForm({ next }: { next?: string }) {
 
   return (
     <div className="w-full">
-      <form onSubmit={sendMagicLink} className="flex flex-col gap-3">
-        <label
-          htmlFor="email"
-          className="font-mono text-[8.5px] font-bold uppercase tracking-[0.13em] text-mist"
-        >
-          Email
-        </label>
-        <input
-          id="email"
-          type="email"
-          inputMode="email"
-          autoComplete="email"
-          required
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          placeholder="you@studio.com"
-          disabled={loading !== null}
-          className="w-full rounded-xl border border-bonelit/20 bg-bonelit/5 px-4 py-[13px] text-[15px] text-bonelit placeholder:text-mist/60 transition-colors focus:border-spring focus:outline-none focus:ring-1 focus:ring-spring/40 disabled:opacity-60"
-        />
-        <button
-          type="submit"
-          disabled={loading !== null}
-          className="mt-1 flex items-center justify-center rounded-xl bg-spring px-4 py-[13px] font-mono text-[10px] font-bold uppercase tracking-[0.13em] text-void transition-opacity hover:opacity-90 disabled:opacity-50"
-        >
-          {loading === "email" ? "Sending…" : "Send me a link"}
-        </button>
-      </form>
+      <button
+        type="button"
+        onClick={continueWithArqo}
+        disabled={loading !== null}
+        className="flex w-full items-center justify-center gap-2.5 rounded-xl bg-spring px-4 py-[14px] font-mono text-[10px] font-bold uppercase tracking-[0.13em] text-void transition-opacity hover:opacity-90 disabled:opacity-50"
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src="/arqo-spiral.svg" alt="" className="h-[15px] w-[15px]" />
+        {loading === "arqo" ? "Opening Arqo…" : "Continue with Arqo"}
+      </button>
 
-      <div className="my-5 flex items-center gap-3">
-        <span className="h-px flex-1 bg-bonelit/15" />
-        <span className="font-mono text-[8px] font-medium uppercase tracking-[0.2em] text-mist2">
-          or
-        </span>
-        <span className="h-px flex-1 bg-bonelit/15" />
-      </div>
-
-      <div className="flex flex-col gap-2.5">
-        <ProviderButton
-          label="Continue with Google"
-          onClick={() => signInWith("google")}
-          loading={loading === "google"}
-          disabled={loading !== null}
-        />
-        <ProviderButton
-          label="Continue with GitHub"
-          onClick={() => signInWith("github")}
-          loading={loading === "github"}
-          disabled={loading !== null}
-        />
-      </div>
+      <p className="mt-3 text-center text-[11px] leading-[1.6] text-mist2">
+        Use your Arqo account. Already signed in? You&rsquo;re already in.
+      </p>
 
       {error && (
         <p
@@ -142,29 +129,35 @@ export function LoginForm({ next }: { next?: string }) {
           {error}
         </p>
       )}
-    </div>
-  );
-}
 
-function ProviderButton({
-  label,
-  onClick,
-  loading,
-  disabled,
-}: {
-  label: string;
-  onClick: () => void;
-  loading: boolean;
-  disabled: boolean;
-}) {
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={disabled}
-      className="flex items-center justify-center rounded-xl border border-bonelit/20 bg-bonelit/5 px-4 py-[12px] font-mono text-[9.5px] font-bold uppercase tracking-[0.11em] text-bonelit transition-colors hover:border-spring hover:bg-bonelit/10 disabled:opacity-50"
-    >
-      {loading ? "Connecting…" : label}
-    </button>
+      {showDevMagicLink && (
+        <div className="mt-7 border-t border-bonelit/15 pt-5">
+          <p className="font-mono text-[8px] font-medium uppercase tracking-[0.2em] text-mist2">
+            Dev fallback
+          </p>
+          <form onSubmit={sendMagicLink} className="mt-3 flex flex-col gap-2.5">
+            <input
+              id="email"
+              type="email"
+              inputMode="email"
+              autoComplete="email"
+              required
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="you@studio.com"
+              disabled={loading !== null}
+              className="w-full rounded-xl border border-bonelit/20 bg-bonelit/5 px-4 py-[12px] text-[14px] text-bonelit placeholder:text-mist/60 transition-colors focus:border-spring focus:outline-none focus:ring-1 focus:ring-spring/40 disabled:opacity-60"
+            />
+            <button
+              type="submit"
+              disabled={loading !== null}
+              className="self-start font-mono text-[8.5px] font-bold uppercase tracking-[0.13em] text-ink-faint underline underline-offset-4 transition-colors hover:text-springpale disabled:opacity-50"
+            >
+              {loading === "email" ? "Sending…" : "Email me a magic link"}
+            </button>
+          </form>
+        </div>
+      )}
+    </div>
   );
 }
