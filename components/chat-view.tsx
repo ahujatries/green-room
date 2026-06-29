@@ -5,7 +5,6 @@ import { useChat } from "@ai-sdk/react";
 import { DefaultChatTransport, type UIMessage } from "ai";
 import type { Character, WorkScript } from "@/lib/characters";
 import { ArrowRight, Restart, Stop } from "./icons";
-import { ArqoCta } from "./arqo-cta";
 import { shareMoment, type ShareResult } from "@/lib/share";
 
 function textOf(m: UIMessage): string {
@@ -102,10 +101,6 @@ export function ChatView({
     setInput("");
   }
 
-  // The conversion moment: once they've felt the character reply a couple of
-  // times, surface the Arqo waitlist inline at the tail of the transcript.
-  const assistantCount = messages.filter((m) => m.role === "assistant").length;
-
   return (
     <div className="absolute inset-0 flex flex-col bg-field">
       {/* Live bar — call-sheet status strip */}
@@ -201,11 +196,6 @@ export function ChatView({
           </div>
         )}
 
-        {assistantCount >= 2 && !busy && (
-          <div className="mt-1">
-            <ArqoCta characterName={character.name} />
-          </div>
-        )}
       </div>
 
       {/* Composer */}

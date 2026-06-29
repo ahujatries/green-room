@@ -70,16 +70,11 @@ export function EntryView({
           Your own scripts?
         </div>
         <p className="mb-[13px] mt-2 text-[12.5px] leading-[1.5] text-quill2">
-          Sign in with Arqo to talk to <em>your</em> cast — or make a free
-          account to browse the Library.
+          Browse the Library of ready-to-run scenes — or paste <em>your</em> own
+          screenplay and talk to its cast.
         </p>
         <span className="flex w-full items-center justify-center gap-2 border-2 border-brink bg-spring p-[13px] font-mono text-[10px] font-bold uppercase tracking-[0.12em] text-brink">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/arqo-spiral.svg" alt="" className="h-[15px] w-[15px]" />
-          Sign in with Arqo
-        </span>
-        <span className="mt-[9px] block w-full border-2 border-callbone/30 p-[11px] text-center font-mono text-[9.5px] font-bold uppercase tracking-[0.12em] text-callbone">
-          Create a free account
+          Browse the Library →
         </span>
       </button>
     </div>

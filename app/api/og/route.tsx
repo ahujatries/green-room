@@ -50,9 +50,6 @@ export async function GET(req: Request) {
           <div style={{ display: "flex", fontSize: "22px", fontWeight: 800, letterSpacing: "0.04em", color: CREAM }}>
             THE GREEN ROOM
           </div>
-          <div style={{ display: "flex", fontSize: "18px", fontWeight: 700, letterSpacing: "0.22em", color: SPRINGPALE }}>
-            · BY ARQO
-          </div>
         </div>
 
         {/* middle: quote + monogram */}
@@ -112,7 +109,7 @@ export async function GET(req: Request) {
             Talk to the characters in your script.
           </div>
           <div style={{ display: "flex", fontSize: "20px", fontWeight: 700, color: SPRING }}>
-            greenroom.tryarqo.com
+            The Green Room
           </div>
         </div>
       </div>

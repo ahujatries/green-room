@@ -50,7 +50,7 @@ export async function shareMoment(m: ShareMoment): Promise<ShareResult> {
   };
   if (typeof nav.share === "function") {
     try {
-      await nav.share({ title: "The Green Room by Arqo", text, url });
+      await nav.share({ title: "The Green Room", text, url });
       return "shared";
     } catch (e) {
       // User dismissed the sheet — that's not a failure, don't also copy.

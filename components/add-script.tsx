@@ -59,14 +59,6 @@ export function AddScript({ onReady }: { onReady: (room: Room) => void }) {
   return (
     <main className="min-h-dvh w-full bg-void">
       <div className="shell-bg grain relative mx-auto flex h-dvh w-full max-w-[440px] flex-col overflow-hidden font-sans text-bonelit sm:my-4 sm:h-[860px] sm:max-h-[calc(100dvh-2rem)] sm:rounded-[28px] sm:border sm:border-bonelit/10 sm:shadow-[0_40px_120px_-30px_rgba(0,0,0,0.9)]">
-        {/* spiral watermark */}
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src="/arqo-spiral.svg"
-          alt=""
-          className="pointer-events-none absolute -bottom-[90px] -right-[70px] z-0 w-[380px] opacity-[0.045]"
-        />
-
         <div className="relative z-10 flex h-full flex-col">
           {/* bulb strip */}
           <div className="flex h-[14px] flex-none items-center justify-between border-b border-black/40 bg-[rgba(6,13,8,0.5)] px-4">
@@ -77,17 +69,11 @@ export function AddScript({ onReady }: { onReady: (room: Room) => void }) {
 
           {/* header */}
           <header className="flex flex-none items-center gap-[9px] border-b border-bonelit/10 px-[18px] pb-[11px] pt-[13px]">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/arqo-spiral.svg"
-              alt="Arqo"
-              className="h-[22px] w-[22px] flex-none"
-            />
             <span className="font-sans text-[18px] font-black tracking-tight text-bonelit">
               the green room
             </span>
             <span className="font-mono text-[8px] font-bold uppercase tracking-[0.16em] text-springpale">
-              by Arqo
+              Private preview
             </span>
           </header>
 
@@ -181,18 +167,8 @@ export function AddScript({ onReady }: { onReady: (room: Room) => void }) {
               browser — nothing is saved to an account.
             </p>
             <p className="mt-2 text-[11.5px] leading-[1.6] text-mist2">
-              The Green Room is a taste of{" "}
-              <span className="font-semibold text-fog">Arqo</span> — the
-              screenwriting studio that remembers your scripts, your cast, and
-              every page.{" "}
-              <a
-                href="https://www.tryarqo.com/waitlist"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="font-semibold text-springpale underline-offset-2 hover:underline"
-              >
-                Join the waitlist →
-              </a>
+              Paste a screenplay and talk to its characters — they only know
+              what the page knows.
             </p>
           </div>
         </div>

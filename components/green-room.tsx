@@ -3,7 +3,7 @@
 // The client root of The Green Room — call-sheet brutalist flow.
 //
 // A small screen state machine inside one phone-shaped "field":
-//   entry → consent → library → detail → chat / call / video
+//   entry → library → detail → chat / call / video
 // The library is the curated catalog (lib/catalog.ts); a writer can also paste
 // their own script (AddScript), which becomes a "custom" room handled exactly
 // like a catalog entry. No auth, no DB — the room is passed inline to the
@@ -16,7 +16,6 @@ import { fileFraction } from "@/lib/characters";
 import { FEATURED, WORKS, getWork, type CatalogEntry } from "@/lib/catalog";
 import { AddScript } from "@/components/add-script";
 import { EntryView } from "@/components/entry-view";
-import { ConsentView } from "@/components/consent-view";
 import { LibraryView } from "@/components/library-view";
 import { DetailView } from "@/components/detail-view";
 import { ChatView } from "@/components/chat-view";
@@ -26,7 +25,6 @@ import { DossierSheet } from "@/components/dossier-sheet";
 
 export type Screen =
   | "entry"
-  | "consent"
   | "library"
   | "detail"
   | "chat"
@@ -118,21 +116,10 @@ export function GreenRoom() {
     return <AddScript onReady={onReadyCustom} />;
   }
 
-  const showBrand =
-    screen === "entry" || screen === "consent" || screen === "library";
+  const showBrand = screen === "entry" || screen === "library";
   const showBack = screen === "detail" || screen === "chat";
   const bare = screen === "call" || screen === "video"; // full-bleed, own chrome
   const backLabel = account === "none" ? "The Green Room" : "The Library";
-
-  const acctMap: Record<
-    Account,
-    { label: string; name: string; initial: string }
-  > = {
-    none: { label: "Guest", name: "no account", initial: "·" },
-    free: { label: "Free account", name: "reader", initial: "+" },
-    arqo: { label: "Signed in", name: "Isabella", initial: "I" },
-  };
-  const acct = acctMap[account];
 
   return (
     <main className="flex min-h-dvh w-full items-center justify-center bg-forest p-0 font-sans sm:p-6">
@@ -140,41 +127,16 @@ export function GreenRoom() {
         {/* clap-stripe cap */}
         <div className="clap h-[10px] flex-none border-b-2 border-brink" />
 
-        {/* ── Brand header (entry / consent / library) ─────────────────── */}
+        {/* ── Brand header (entry / library) ───────────────────────────── */}
         {showBrand && (
           <header className="flex flex-none items-center gap-[9px] border-b-2 border-brink bg-headerdeep px-4 py-[13px]">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/arqo-spiral.svg" alt="Arqo" className="h-8 w-8 flex-none" />
             <span className="font-sans text-[16px] font-black uppercase leading-none tracking-[-0.01em] text-callbone">
               The <span className="text-spring">Green</span> Room
             </span>
             <span className="flex-1" />
-            {screen === "library" ? (
-              <span className="flex items-center gap-2">
-                <span className="text-right">
-                  <span className="block font-mono text-[7.5px] font-bold uppercase tracking-[0.1em] text-spring">
-                    {acct.label}
-                  </span>
-                  <span className="block font-mono text-[8px] text-field">
-                    {acct.name}
-                  </span>
-                </span>
-                <span className="flex h-[30px] w-[30px] flex-none items-center justify-center rounded-full border-2 border-brink bg-spring font-script text-[14px] font-bold text-brink">
-                  {acct.initial}
-                </span>
-              </span>
-            ) : (
-              <span className="flex items-center gap-2 whitespace-nowrap">
-                <span className="font-mono text-[9px] font-bold uppercase tracking-[0.16em] text-spring">
-                  By
-                </span>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/arqo-spiral.svg" alt="" className="h-[21px] w-[21px]" />
-                <span className="font-sans text-[19px] font-black tracking-[-0.04em] text-callbone">
-                  arqo
-                </span>
-              </span>
-            )}
+            <span className="border-2 border-spring px-2 py-[5px] font-mono text-[8px] font-bold uppercase tracking-[0.12em] text-spring">
+              Private preview
+            </span>
           </header>
         )}
 
@@ -204,8 +166,6 @@ export function GreenRoom() {
                   {backLabel}
                 </span>
                 <span className="flex-1" />
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img src="/arqo-spiral.svg" alt="" className="h-5 w-5" />
               </>
             ) : (
               <>
@@ -243,20 +203,10 @@ export function GreenRoom() {
             <EntryView
               featured={FEATURED}
               onMeetCast={() => openWork(FEATURED.id)}
-              onConnect={() => nav("consent")}
-            />
-          )}
-          {screen === "consent" && (
-            <ConsentView
-              onCreateFree={() => {
+              onConnect={() => {
                 setAccount("free");
                 nav("library");
               }}
-              onAuthorize={() => {
-                setAccount("arqo");
-                nav("library");
-              }}
-              onBack={back}
             />
           )}
           {screen === "library" && (
