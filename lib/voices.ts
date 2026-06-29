@@ -13,6 +13,9 @@ export const VOICES = {
   alice: "Xb7hH8MSUJpSbSDYk0k2", // British, clear, commanding female — Leia
   chris: "iP95p4xoKVk53GoZ742B", // charming, casual, wry male — Han
   adam: "pNInz6obpgDQGcFmaJgB", // dominant, firm male
+  // Barry B. Benson (Bee Movie) — an Instant Voice Clone from a clean monologue
+  // sample (#26); fast, nasal, neurotic everyman.
+  barry: "tOGyGyrPll31gdJodPqK",
   // Vader's base voice — a Voice-Design original ("Sith Lord (Green Room)"):
   // deep, slow, mechanical. An original (not a Vader/James-Earl-Jones clone,
   // which ElevenLabs blocks anyway) keeps a GTM product clear of voice-likeness
